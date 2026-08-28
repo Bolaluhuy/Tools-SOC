@@ -441,7 +441,7 @@ Severity: ...
             <div><label>Report time</label><input type="text" id="d_time" placeholder="15:00"></div>
           </div>
           <div class="row3">
-            <div><label>Shift</label><select id="d_shift"><option>Shift 1</option><option selected>Shift 2</option><option>Shift 3</option></select></div>
+            <div><label>Shift</label><select id="d_shift" onchange="applyShiftDefaults()"><option>Shift 1</option><option selected>Shift 2</option><option>Shift 3</option></select></div>
             <div><label>Shift time</label><input type="text" id="d_shifttime" placeholder="07:00 - 15:00"></div>
             <div><label>SOC L1 engineer</label><input type="text" id="d_engineer"></div>
           </div>
@@ -539,10 +539,27 @@ Severity: ...
       <div class="step-card">
         <div class="step-head" onclick="toggleStep(this)">
           <div class="step-num">08</div>
+          <div><h3>Evidence & screenshots</h3><div class="sub" id="evCount">0 gambar</div></div>
+          <div class="step-chevron">▾</div>
+        </div>
+        <div class="step-body-wrap"><div class="step-body">
+          <div class="sub">Upload screenshot bukti (alert detail, log, dashboard, dll) — masuk ke laporan sebagai section "Evidence / Screenshots" lengkap dengan keterangan.</div>
+          <div class="dropzone" id="dz_evidence" onclick="document.getElementById('evidenceFiles').click()">Drop / klik untuk pilih satu atau beberapa gambar bukti</div>
+          <input type="file" id="evidenceFiles" accept="image/*" multiple style="display:none" onchange="handleEvidenceFiles(event)">
+          <div id="evidenceList"></div>
+        </div></div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-head" onclick="toggleStep(this)">
+          <div class="step-num">09</div>
           <div><h3>Issues, recommendations, sign-off</h3></div>
           <div class="step-chevron">▾</div>
         </div>
         <div class="step-body-wrap"><div class="step-body">
+          <div class="flex" style="margin-bottom:10px;">
+            <button class="btn secondary small" onclick="autoFillSummaryAndReco()">✨ Auto-isi ringkasan, status & rekomendasi dari data export</button>
+          </div>
           <label>Issues & constraints (satu poin per baris)</label>
           <textarea id="d_issues" rows="2"></textarea>
           <label>Recommendations & notes (satu poin per baris)</label>
@@ -864,6 +881,7 @@ let coverImgBytes = null;  // Uint8Array, untuk ImageRun docx.js
 let coverImgDims = null;   // {w,h} px asli
 let coverImgType = 'png';  // 'png' | 'jpg', dibutuhkan ImageRun docx.js
 let monRows = [], taskRows = [], incRows = [];
+let evidenceItems = []; // {id, name, dataUrl, bytes, type, caption}
 
 function findCol(headers, keywords){
   const lower = headers.map(h => String(h||'').toLowerCase());
@@ -995,6 +1013,63 @@ function applyAutoReviewed(){
   }
 }
 
+/* ---- auto-generate narrative summary, suggested status & tuning recommendations from xlsx stats ---- */
+function suggestSeverityStatus(){
+  const b = dailyStats.bucket;
+  if(b.Critical.rules > 0) return 'Critical';
+  if(dailyStats.notable.length > 3 || b.High.rules > 3) return 'High';
+  if(dailyStats.notable.length > 0 || b.High.rules > 0) return 'Medium';
+  return 'Low';
+}
+function autoFillSummaryAndReco(){
+  if(!dailyStats){ alert('Import file alert export (.xlsx) dulu di section 01.'); return; }
+  const hasContent = document.getElementById('d_summary').value.trim() || document.getElementById('d_reco').value.trim();
+  if(hasContent && !confirm('Ringkasan / rekomendasi sudah ada isinya. Timpa dengan hasil auto-generate?')) return;
+
+  const s = dailyStats;
+  const top = s.topRules[0];
+  const topShare = s.totalEvents ? ((top.events/s.totalEvents)*100).toFixed(1) : '0';
+  const threshold = parseInt(document.getElementById('d_threshold').value)||8;
+
+  // 1) suggest overall status
+  document.getElementById('d_status').value = suggestSeverityStatus();
+
+  // 2) narrative summary
+  let summary = `Monitoring berjalan selama shift dengan total ${s.totalEvents.toLocaleString()} events dari ${s.totalRules} rules terpicu. `;
+  summary += `Volume alert didominasi oleh "${top.desc || top.rule}" (${topShare}% dari total events). `;
+  if(s.notable.length > 0){
+    const names = s.notable.slice(0,3).map(n=>n.rule).join(', ');
+    summary += `Terdapat ${s.notable.length} alert level tinggi (≥${threshold}) yang perlu ditinjau/dikonfirmasi, di antaranya rule ${names}${s.notable.length>3?', dll':''}. `;
+  } else {
+    summary += `Tidak ada alert dengan level ≥${threshold} pada periode ini. `;
+  }
+  summary += `Belum ada insiden kritis yang tercatat pada shift ini — sesuaikan kalimat ini kalau ada temuan lain.`;
+  document.getElementById('d_summary').value = summary;
+
+  // 3) tuning recommendations dari top noisy rules
+  const recoLines = [];
+  s.topRules.filter(r=>{
+    const share = s.totalEvents ? (r.events/s.totalEvents)*100 : 0;
+    return share >= 10;
+  }).slice(0,3).forEach(r=>{
+    const share = s.totalEvents ? ((r.events/s.totalEvents)*100).toFixed(1) : '0';
+    recoLines.push(`Tuning & Noise Reduction: Rule ${r.rule} (${r.desc || '-'}) menyumbang ${share}% dari total volume — pertimbangkan tuning/exclusion untuk mengurangi alert fatigue.`);
+  });
+  s.notable.forEach(n=>{
+    const desc = (n.desc||'').toLowerCase();
+    if((desc.includes('domain administrator') || desc.includes('explicit credential')) && !recoLines.some(l=>l.includes('PAM'))){
+      recoLines.push(`Privileged Access Management (PAM): Batasi logon interactive/explicit untuk Domain Administrator (rule ${n.rule}). Terapkan Jump Host dan MFA untuk akses administratif.`);
+    }
+    if((desc.includes('secret key') || desc.includes('certificate')) && !recoLines.some(l=>l.includes('kredensial'))){
+      recoLines.push(`Credential Hygiene: Investigasi lebih lanjut alert terkait secret key/certificate (rule ${n.rule}) dan lakukan rotasi kredensial bila diperlukan.`);
+    }
+  });
+  if(recoLines.length===0) recoLines.push('Tidak ada rekomendasi tuning spesifik dari data shift ini — lanjutkan monitoring rutin.');
+  document.getElementById('d_reco').value = recoLines.join('\n');
+
+  alert('Ringkasan, status, dan rekomendasi sudah di-generate dari data export. Silakan cek & sunting sebelum generate laporan final.');
+}
+
 /* ---- dynamic rows: monitoring / task / incident ---- */
 function addMonRow(vals){
   monRows.push(vals || {time:'', rule:'', desc:'', action:'', result:''});
@@ -1060,6 +1135,46 @@ function renderIncTable(){
     </tr>`).join('');
   document.getElementById('incCount').textContent = incRows.length + ' rows' + (incRows.length===0? ' — kosong = section ini di-drop otomatis':'');
 }
+
+/* ---- evidence / screenshots upload ---- */
+function handleEvidenceFiles(evtOrFiles){
+  const files = Array.from((evtOrFiles instanceof Event) ? evtOrFiles.target.files : evtOrFiles);
+  files.forEach(file=>{
+    const id = Date.now()+Math.random();
+    const item = { id, name:file.name, dataUrl:null, bytes:null, type: /jpe?g$/i.test(file.type)||/\.jpe?g$/i.test(file.name)?'jpg':'png', caption:'' };
+    evidenceItems.push(item);
+    const rUrl = new FileReader();
+    rUrl.onload = e=>{ item.dataUrl = e.target.result; renderEvidenceList(); };
+    rUrl.readAsDataURL(file);
+    const rBytes = new FileReader();
+    rBytes.onload = e=>{ item.bytes = new Uint8Array(e.target.result); };
+    rBytes.readAsArrayBuffer(file);
+  });
+  renderEvidenceList();
+}
+function removeEvidence(id){
+  evidenceItems = evidenceItems.filter(x=>x.id!=id);
+  renderEvidenceList();
+}
+function renderEvidenceList(){
+  const list = document.getElementById('evidenceList');
+  list.innerHTML = evidenceItems.map(it=>`
+    <div class="thumb-row">
+      ${it.dataUrl ? `<img src="${it.dataUrl}">` : `<div class="muted" style="width:64px;">…</div>`}
+      <div class="grow">
+        <label style="margin:0 0 4px;">Keterangan (caption)</label>
+        <input type="text" placeholder="cth: Detail alert rule 100935" value="${it.caption}" onchange="updateEvidenceCaption('${it.id}', this.value)">
+      </div>
+      <button class="btn danger small" onclick="removeEvidence('${it.id}')">Hapus</button>
+    </div>`).join('');
+  document.getElementById('evCount').textContent = evidenceItems.length + ' gambar';
+  const dz = document.getElementById('dz_evidence');
+  if(evidenceItems.length){ dz.textContent = '✅ '+evidenceItems.length+' gambar — drop lagi untuk menambah'; dz.classList.add('filled'); }
+}
+function updateEvidenceCaption(id, val){
+  const it = evidenceItems.find(x=>x.id==id); if(it) it.caption = val;
+}
+wireDropzone('dz_evidence', files => handleEvidenceFiles(files), f => f.type.startsWith('image/'), true);
 
 /* ---- save / load draft (JSON, no localStorage) ---- */
 function collectFormState(){
@@ -1232,6 +1347,16 @@ function buildDailyReportHtml(m){
         <h3>${secNum}. Issues & Constraints</h3><ul>${issuesLi}</ul>
         <h3>${secNum+1}. Recommendations & Notes</h3><ul>${recoLi}</ul>
 
+        ${evidenceItems.length ? `
+        <h3>Evidence / Screenshots</h3>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          ${evidenceItems.map(it=>`
+            <div style="border:1px solid #ddd; border-radius:6px; overflow:hidden;">
+              ${it.dataUrl ? `<img src="${it.dataUrl}" style="width:100%; display:block;">` : ''}
+              <div style="padding:6px 10px; font-size:11px; color:#555; border-top:1px solid #eee;">${it.caption || it.name}</div>
+            </div>`).join('')}
+        </div>` : ''}
+
         <h3>Document Sign-off</h3>
         <p class="muted" style="margin:0 0 8px;">Laporan ini dibuat dan diverifikasi oleh:</p>
         <table class="kv-table">
@@ -1291,32 +1416,46 @@ function dSubHeading(text){
 function dBody(text){ return new docx.Paragraph({ children:[new docx.TextRun({text, size:21})], spacing:{after:120} }); }
 function dBullet(text){ return new docx.Paragraph({ text, bullet:{level:0}, spacing:{after:60} }); }
 
+function getImageDimensions(dataUrl){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=> resolve({ w: img.naturalWidth, h: img.naturalHeight });
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+
 async function downloadDailyWord(){
   const m = gatherDailyModel();
   if(!m) return;
-  const { g, gc, descMode, period, reviewedVal, taskVal, secNum, stats } = m;
-  const children = [];
+  const btnEl = (typeof event!=='undefined' && event && event.target) ? event.target.closest('button') : null;
+  const originalLabel = btnEl ? btnEl.textContent : '';
+  if(btnEl){ btnEl.textContent = '⏳ Menyusun Word...'; btnEl.disabled = true; }
+  try{
+    const { g, gc, descMode, period, reviewedVal, taskVal, secNum, stats } = m;
+    const children = [];
 
-  // cover
-  if(coverImgBytes && coverImgDims){
-    const targetW = 680;
-    const targetH = Math.round(targetW * (coverImgDims.h / coverImgDims.w));
-    children.push(new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children:[
-      new docx.ImageRun({ type: coverImgType, data: coverImgBytes, transformation:{ width: targetW, height: targetH } })
-    ]}));
-  } else {
-    children.push(
-      new docx.Paragraph({ spacing:{before:2400}, alignment:docx.AlignmentType.CENTER,
-        children:[new docx.TextRun({text:'CONFIDENTIAL', color:D_GOLD, bold:true, size:22})] }),
-      new docx.Paragraph({ spacing:{before:200}, alignment:docx.AlignmentType.CENTER,
-        children:[new docx.TextRun({text:'SOC L1 DAILY OPERATIONAL REPORT', bold:true, size:44, color:'1A1300'})] }),
-      new docx.Paragraph({ spacing:{before:220}, alignment:docx.AlignmentType.CENTER,
-        children:[new docx.TextRun({text:g('d_customer')||'-', size:28, color:D_GOLD})] }),
-      new docx.Paragraph({ spacing:{before:400}, alignment:docx.AlignmentType.CENTER,
-        children:[new docx.TextRun({text:period+'  —  '+g('d_shift'), size:20, color:'666666'})] }),
-    );
-  }
-  children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
+    // cover — hitung ulang dimensi di sini biar gak ketinggalan race condition upload
+    if(coverImgBytes && coverImgData){
+      if(!coverImgDims){ coverImgDims = await getImageDimensions(coverImgData); }
+      const targetW = 680;
+      const targetH = Math.round(targetW * (coverImgDims.h / coverImgDims.w));
+      children.push(new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children:[
+        new docx.ImageRun({ type: coverImgType, data: coverImgBytes, transformation:{ width: targetW, height: targetH } })
+      ]}));
+    } else {
+      children.push(
+        new docx.Paragraph({ spacing:{before:2400}, alignment:docx.AlignmentType.CENTER,
+          children:[new docx.TextRun({text:'CONFIDENTIAL', color:D_GOLD, bold:true, size:22})] }),
+        new docx.Paragraph({ spacing:{before:200}, alignment:docx.AlignmentType.CENTER,
+          children:[new docx.TextRun({text:'SOC L1 DAILY OPERATIONAL REPORT', bold:true, size:44, color:'1A1300'})] }),
+        new docx.Paragraph({ spacing:{before:220}, alignment:docx.AlignmentType.CENTER,
+          children:[new docx.TextRun({text:g('d_customer')||'-', size:28, color:D_GOLD})] }),
+        new docx.Paragraph({ spacing:{before:400}, alignment:docx.AlignmentType.CENTER,
+          children:[new docx.TextRun({text:period+'  —  '+g('d_shift'), size:20, color:'666666'})] }),
+      );
+    }
+    children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
 
   children.push(dHeading('Report Header'), dKvTable([
     ['Customer / Project', g('d_customer')||'-'],
@@ -1383,20 +1522,44 @@ async function downloadDailyWord(){
   children.push(dHeading((secNum+1)+'. Recommendations & Notes'));
   children.push(...(recoLines.length ? recoLines.map(dBullet) : [dBody('-')]));
 
-  // sign-off — halaman terpisah biar jelas & gak kelewat
-  children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
-  children.push(dHeading('Document Sign-off'),
-    dBody('Laporan ini dibuat dan diverifikasi oleh:'),
-    dDataTable(['Prepared by','Reviewed by'],
-      [[ (g('d_preparedby')||'-')+' — SOC L1 Analyst', (g('d_reviewedby')||'-')+' — SOC L2 / Shift Lead' ]],
-      [4675,4675]));
+  // evidence / screenshots
+  if(evidenceItems.length){
+    children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
+    children.push(dHeading('Evidence / Screenshots'));
+    for(const it of evidenceItems){
+      if(!it.bytes || !it.dataUrl) continue;
+      let dims = null;
+      try{ dims = await getImageDimensions(it.dataUrl); }catch(e){ dims = {w:800,h:500}; }
+      const targetW = 560;
+      const targetH = Math.round(targetW * (dims.h / dims.w));
+      children.push(new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, spacing:{before:160}, children:[
+        new docx.ImageRun({ type: it.type, data: it.bytes, transformation:{ width: targetW, height: targetH } })
+      ]}));
+      children.push(new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, spacing:{after:200},
+        children:[new docx.TextRun({ text: it.caption || it.name, italics:true, size:18, color:'666666' })] }));
+    }
+  }
 
-  const doc = new docx.Document({ sections: [{ properties:{}, children }] });
-  const blob = await docx.Packer.toBlob(doc);
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = m.filename + '.docx';
-  a.click();
+  // sign-off — halaman terpisah biar jelas & gak kelewat
+    children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
+    children.push(dHeading('Document Sign-off'),
+      dBody('Laporan ini dibuat dan diverifikasi oleh:'),
+      dDataTable(['Prepared by','Reviewed by'],
+        [[ (g('d_preparedby')||'-')+' — SOC L1 Analyst', (g('d_reviewedby')||'-')+' — SOC L2 / Shift Lead' ]],
+        [4675,4675]));
+
+    const doc = new docx.Document({ sections: [{ properties:{}, children }] });
+    const blob = await docx.Packer.toBlob(doc);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = m.filename + '.docx';
+    a.click();
+  } catch(err){
+    alert('Gagal membuat file Word: ' + err.message + '\n\nCoba lagi. Kalau masih gagal, kabari saya beserta pesan error ini.');
+    console.error(err);
+  } finally {
+    if(btnEl){ btnEl.textContent = originalLabel || '📝 Download Word (.docx)'; btnEl.disabled = false; }
+  }
 }
 
 /* ---------- DOWNLOAD: PDF (render langsung dari preview HTML) ---------- */
@@ -1406,21 +1569,51 @@ async function downloadDailyPdf(){
   document.getElementById('dailyReportPreview').innerHTML = buildDailyReportHtml(m);
   document.getElementById('dailyPreviewOutputCard').style.display = 'block';
   const src = document.getElementById('dailyPrintArea');
-  const btnRow = event && event.target ? event.target.closest('button') : null;
-  if(btnRow){ btnRow.textContent = '⏳ Menyiapkan PDF...'; btnRow.disabled = true; }
+  const btnEl = (typeof event!=='undefined' && event && event.target) ? event.target.closest('button') : null;
+  const originalLabel = btnEl ? btnEl.textContent : '';
+  if(btnEl){ btnEl.textContent = '⏳ Menyiapkan PDF...'; btnEl.disabled = true; }
   try{
+    // render seluruh preview jadi satu canvas panjang, resolusi tinggi
+    const fixedWidthPx = 900; // lebar render tetap, biar konsisten & gak "reflow" aneh
+    src.style.width = fixedWidthPx + 'px';
+    await new Promise(r=>setTimeout(r, 60)); // beri waktu browser reflow sebelum capture
+    const canvas = await html2canvas(src, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff',
+      width: fixedWidthPx, windowWidth: fixedWidthPx,
+    });
+    src.style.width = '';
+
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit:'pt', format:'a4' });
-    await pdf.html(src, {
-      x: 0, y: 0,
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      autoPaging: 'text',
-      width: 595,
-      windowWidth: src.scrollWidth || 800,
-    });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    const pxPerPt = canvas.width / pageW;      // berapa px kanvas = 1pt PDF, di lebar penuh
+    const pageHeightPx = Math.floor(pageH * pxPerPt);
+    let renderedY = 0;
+    let first = true;
+
+    while(renderedY < canvas.height){
+      const sliceH = Math.min(pageHeightPx, canvas.height - renderedY);
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = sliceH;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
+      ctx.drawImage(canvas, 0, renderedY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      const sliceDataUrl = sliceCanvas.toDataURL('image/jpeg', 0.95);
+      const sliceHeightPt = sliceH / pxPerPt;
+      if(!first) pdf.addPage();
+      pdf.addImage(sliceDataUrl, 'JPEG', 0, 0, pageW, sliceHeightPt);
+      first = false;
+      renderedY += sliceH;
+    }
     pdf.save(m.filename + '.pdf');
+  } catch(err){
+    alert('Gagal membuat PDF: ' + err.message + '\n\nCoba klik "Preview Laporan" dulu, cek tampilannya wajar, baru coba Download PDF lagi.');
   } finally {
-    if(btnRow){ btnRow.textContent = '📄 Download PDF'; btnRow.disabled = false; }
+    if(btnEl){ btnEl.textContent = originalLabel || '📄 Download PDF'; btnEl.disabled = false; }
   }
 }
 
@@ -1441,6 +1634,30 @@ function handleImages(evtOrFiles){
   document.getElementById('dz_img').classList.add('filled');
 }
 wireDropzone('dz_img', files => handleImages(files), f => f.type.startsWith('image/'), true);
+
+/* ============ AUTO-FILL: SHIFT TIME & REPORT DATE ============ */
+const SHIFT_TIMES = {
+  'Shift 1': { range: '07:00 - 15:00', end: '15:00' },
+  'Shift 2': { range: '15:00 - 23:00', end: '23:00' },
+  'Shift 3': { range: '23:00 - 07:00', end: '07:00' },
+};
+function applyShiftDefaults(){
+  const shift = document.getElementById('d_shift').value;
+  const def = SHIFT_TIMES[shift];
+  if(!def) return;
+  document.getElementById('d_shifttime').value = def.range;
+  document.getElementById('d_time').value = def.end;
+}
+function todayFormatted(){
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const d = new Date();
+  return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+(function initDailyDefaults(){
+  const dateEl = document.getElementById('d_date');
+  if(dateEl && !dateEl.value) dateEl.value = todayFormatted();
+  applyShiftDefaults();
+})();
 function renderImgList(){
   const list = document.getElementById('imgList');
   list.innerHTML = imgItems.map(it=>`
