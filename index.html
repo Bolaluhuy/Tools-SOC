@@ -240,6 +240,11 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
   .report-doc .head-meta{display:grid; grid-template-columns:1fr 1fr; gap:4px 18px; font-size:12.5px; margin-bottom:10px;}
   .report-doc .head-meta div{padding:4px 0; border-bottom:1px dashed #eee;}
   .report-doc pre{white-space:pre-wrap; background:#0c1120; color:#c9d6f5; padding:12px; border-radius:6px; font-size:11.5px;}
+  /* the global .muted / light-gray tones are tuned for the dark app UI; on the white
+     report page they render as near-invisible washed-out text, so give the printable
+     report its own, higher-contrast gray */
+  .report-doc .muted{color:#555 !important;}
+  .report-doc{color:#222;}
   @media print{
     body *{visibility:hidden;}
     #printArea, #printArea *{visibility:visible;}
@@ -1024,7 +1029,7 @@ function suggestSeverityStatus(){
 function autoFillSummaryAndReco(){
   if(!dailyStats){ alert('Import file alert export (.xlsx) dulu di section 01.'); return; }
   const hasContent = document.getElementById('d_summary').value.trim() || document.getElementById('d_reco').value.trim();
-  if(hasContent && !confirm('Ringkasan / rekomendasi sudah ada isinya. Timpa dengan hasil auto-generate?')) return;
+  if(hasContent && !confirm('Summary / recommendations already have content. Overwrite with auto-generated result?')) return;
 
   const s = dailyStats;
   const top = s.topRules[0];
@@ -1034,40 +1039,40 @@ function autoFillSummaryAndReco(){
   // 1) suggest overall status
   document.getElementById('d_status').value = suggestSeverityStatus();
 
-  // 2) narrative summary
-  let summary = `Monitoring berjalan selama shift dengan total ${s.totalEvents.toLocaleString()} events dari ${s.totalRules} rules terpicu. `;
-  summary += `Volume alert didominasi oleh "${top.desc || top.rule}" (${topShare}% dari total events). `;
+  // 2) narrative summary — always generated in English (report is English-only)
+  let summary = `Monitoring was conducted throughout the shift, covering a total of ${s.totalEvents.toLocaleString()} events across ${s.totalRules} triggered rules. `;
+  summary += `Alert volume was dominated by "${top.desc || top.rule}" (${topShare}% of total events). `;
   if(s.notable.length > 0){
     const names = s.notable.slice(0,3).map(n=>n.rule).join(', ');
-    summary += `Terdapat ${s.notable.length} alert level tinggi (≥${threshold}) yang perlu ditinjau/dikonfirmasi, di antaranya rule ${names}${s.notable.length>3?', dll':''}. `;
+    summary += `${s.notable.length} high-severity alert${s.notable.length>1?'s':''} (level ≥ ${threshold}) require${s.notable.length>1?'':'s'} review/confirmation, including rule${s.notable.length>1?'s':''} ${names}${s.notable.length>3?', among others':''}. `;
   } else {
-    summary += `Tidak ada alert dengan level ≥${threshold} pada periode ini. `;
+    summary += `No alerts at or above level ${threshold} were observed during this period. `;
   }
-  summary += `Belum ada insiden kritis yang tercatat pada shift ini — sesuaikan kalimat ini kalau ada temuan lain.`;
+  summary += `No critical incidents were recorded during this shift.`;
   document.getElementById('d_summary').value = summary;
 
-  // 3) tuning recommendations dari top noisy rules
+  // 3) tuning recommendations from top noisy rules — always generated in English
   const recoLines = [];
   s.topRules.filter(r=>{
     const share = s.totalEvents ? (r.events/s.totalEvents)*100 : 0;
     return share >= 10;
   }).slice(0,3).forEach(r=>{
     const share = s.totalEvents ? ((r.events/s.totalEvents)*100).toFixed(1) : '0';
-    recoLines.push(`Tuning & Noise Reduction: Rule ${r.rule} (${r.desc || '-'}) menyumbang ${share}% dari total volume — pertimbangkan tuning/exclusion untuk mengurangi alert fatigue.`);
+    recoLines.push(`Tuning & Noise Reduction: Rule ${r.rule} (${r.desc || '-'}) accounts for ${share}% of total volume — consider tuning/exclusion to reduce alert fatigue.`);
   });
   s.notable.forEach(n=>{
     const desc = (n.desc||'').toLowerCase();
     if((desc.includes('domain administrator') || desc.includes('explicit credential')) && !recoLines.some(l=>l.includes('PAM'))){
-      recoLines.push(`Privileged Access Management (PAM): Batasi logon interactive/explicit untuk Domain Administrator (rule ${n.rule}). Terapkan Jump Host dan MFA untuk akses administratif.`);
+      recoLines.push(`Privileged Access Management (PAM): Restrict interactive/explicit logon for Domain Administrator (rule ${n.rule}). Enforce a jump host and MFA for administrative access.`);
     }
-    if((desc.includes('secret key') || desc.includes('certificate')) && !recoLines.some(l=>l.includes('kredensial'))){
-      recoLines.push(`Credential Hygiene: Investigasi lebih lanjut alert terkait secret key/certificate (rule ${n.rule}) dan lakukan rotasi kredensial bila diperlukan.`);
+    if((desc.includes('secret key') || desc.includes('certificate')) && !recoLines.some(l=>l.includes('Credential Hygiene'))){
+      recoLines.push(`Credential Hygiene: Further investigate the secret key/certificate alert (rule ${n.rule}) and rotate credentials if required.`);
     }
   });
-  if(recoLines.length===0) recoLines.push('Tidak ada rekomendasi tuning spesifik dari data shift ini — lanjutkan monitoring rutin.');
+  if(recoLines.length===0) recoLines.push('No specific tuning recommendations from this shift\'s data — continue routine monitoring.');
   document.getElementById('d_reco').value = recoLines.join('\n');
 
-  alert('Ringkasan, status, dan rekomendasi sudah di-generate dari data export. Silakan cek & sunting sebelum generate laporan final.');
+  alert('Summary, status, and recommendations have been generated from the export data (in English). Please review and edit before generating the final report.');
 }
 
 /* ---- dynamic rows: monitoring / task / incident ---- */
@@ -1078,7 +1083,7 @@ function addMonRow(vals){
 function seedFromNotable(){
   if(!dailyStats || dailyStats.notable.length===0){ alert('Belum ada data notable alert. Import xlsx dulu.'); return; }
   dailyStats.notable.forEach(n=>{
-    monRows.push({time:'', rule:n.rule, desc:n.desc, action:'Investigated', result:'Confirmed False Positive'});
+    monRows.push({time:'-', rule:n.rule, desc:n.desc, action:'Investigated', result:'Confirmed False Positive'});
   });
   renderMonTable();
 }
@@ -1304,12 +1309,12 @@ function buildDailyReportHtml(m){
   const recoLi = (g('d_reco')||'').split('\n').filter(x=>x.trim()).map(x=>'<li>'+x+'</li>').join('') || '<li>-</li>';
 
   const coverHtml = coverImgData
-    ? `<div style="text-align:center; margin-bottom:18px;"><img src="${coverImgData}" style="width:100%; border-radius:6px;"></div>`
+    ? `<div style="text-align:center; margin-bottom:18px;"><img src="${coverImgData}" style="max-width:100%; max-height:680px; width:auto; height:auto; border-radius:6px; display:inline-block;"></div>`
     : `<div style="text-align:center; padding:34px 0; border-bottom:3px solid #c9922f; margin-bottom:18px;">
         <div style="font-size:11px; letter-spacing:2px; color:#c9922f; font-weight:800;">CONFIDENTIAL</div>
         <div style="font-size:24px; font-weight:800; margin-top:8px;">SOC L1 DAILY OPERATIONAL REPORT</div>
         <div style="font-size:14px; color:#c9922f; margin-top:6px;">${g('d_customer')||'-'}</div>
-        <div style="font-size:11px; color:#888; margin-top:4px;">${period} · ${g('d_shift')}</div>
+        <div style="font-size:11px; color:#555; margin-top:4px;">${period} · ${g('d_shift')}</div>
       </div>`;
 
   return `
@@ -1360,8 +1365,8 @@ function buildDailyReportHtml(m){
         <h3>Document Sign-off</h3>
         <p class="muted" style="margin:0 0 8px;">Laporan ini dibuat dan diverifikasi oleh:</p>
         <table class="kv-table">
-          <tr><td>Prepared by</td><td>${g('d_preparedby')||'-'} <span style="color:#888;">(SOC L1 Analyst)</span></td></tr>
-          <tr><td>Reviewed by</td><td>${g('d_reviewedby')||'-'} <span style="color:#888;">(SOC L2 / Shift Lead)</span></td></tr>
+          <tr><td>Prepared by</td><td>${g('d_preparedby')||'-'} <span style="color:#555;">(SOC L1 Analyst)</span></td></tr>
+          <tr><td>Reviewed by</td><td>${g('d_reviewedby')||'-'} <span style="color:#555;">(SOC L2 / Shift Lead)</span></td></tr>
         </table>
       </div>
     </div>`;
@@ -1438,8 +1443,16 @@ async function downloadDailyWord(){
     // cover — hitung ulang dimensi di sini biar gak ketinggalan race condition upload
     if(coverImgBytes && coverImgData){
       if(!coverImgDims){ coverImgDims = await getImageDimensions(coverImgData); }
-      const targetW = 680;
-      const targetH = Math.round(targetW * (coverImgDims.h / coverImgDims.w));
+      // Page usable area (Letter, 1" margins) ≈ 6.5in x 9in = 624px x 864px @96dpi.
+      // Fit the cover fully within ONE page: cap by width first, then re-cap by height
+      // so a tall/portrait photo never overflows onto (and blanks out) the next page.
+      const maxW = 600, maxH = 760;
+      let targetW = Math.min(maxW, coverImgDims.w);
+      let targetH = Math.round(targetW * (coverImgDims.h / coverImgDims.w));
+      if(targetH > maxH){
+        targetH = maxH;
+        targetW = Math.round(targetH * (coverImgDims.w / coverImgDims.h));
+      }
       children.push(new docx.Paragraph({ alignment: docx.AlignmentType.CENTER, children:[
         new docx.ImageRun({ type: coverImgType, data: coverImgBytes, transformation:{ width: targetW, height: targetH } })
       ]}));
@@ -1457,7 +1470,7 @@ async function downloadDailyWord(){
     }
     children.push(new docx.Paragraph({ children:[new docx.PageBreak()] }));
 
-  children.push(dHeading('Report Header'), dKvTable([
+  children.push(dHeading('Document Header'), dKvTable([
     ['Customer / Project', g('d_customer')||'-'],
     ['Report Date', (g('d_date')||'-')+' '+(g('d_time')||'')],
     ['Shift', g('d_shift')+' ('+(g('d_shifttime')||'-')+')'],
@@ -1548,7 +1561,10 @@ async function downloadDailyWord(){
         [[ (g('d_preparedby')||'-')+' — SOC L1 Analyst', (g('d_reviewedby')||'-')+' — SOC L2 / Shift Lead' ]],
         [4675,4675]));
 
-    const doc = new docx.Document({ sections: [{ properties:{}, children }] });
+    const doc = new docx.Document({ sections: [{
+      properties:{ page:{ margin:{ top:1440, right:1440, bottom:1440, left:1440 } } },
+      children
+    }] });
     const blob = await docx.Packer.toBlob(doc);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1586,6 +1602,20 @@ async function downloadDailyPdf(){
       return { top: r.top - containerTop, bottom: r.bottom - containerTop };
     }).filter(b => b.bottom > b.top);
 
+    // catat posisi tiap <table> & baris headernya, supaya kalau tabel kepotong
+    // di tengah halaman, header kolomnya bisa digambar ulang di halaman lanjutan
+    // (sebelumnya: halaman lanjutan tabel tidak punya header sama sekali)
+    const tables = Array.from(src.querySelectorAll('table')).map(t=>{
+      const headerRow = t.querySelector('tr');
+      if(!headerRow) return null;
+      const tRect = t.getBoundingClientRect();
+      const hRect = headerRow.getBoundingClientRect();
+      return {
+        top: tRect.top - containerTop, bottom: tRect.bottom - containerTop,
+        headerTop: hRect.top - containerTop, headerBottom: hRect.bottom - containerTop,
+      };
+    }).filter(Boolean);
+
     const canvas = await html2canvas(src, {
       scale: 2, useCORS: true, backgroundColor: '#ffffff',
       width: fixedWidthPx, windowWidth: fixedWidthPx,
@@ -1612,32 +1642,57 @@ async function downloadDailyPdf(){
       return adjusted;
     }
 
+    // kalau titik potong halaman berikutnya jatuh di TENGAH badan tabel (setelah
+    // header-nya), kembalikan info header tabel itu supaya digambar ulang
+    function headerToRepeatAt(cssY){
+      for(const t of tables){
+        if(cssY > t.headerBottom && cssY < t.bottom) return t;
+      }
+      return null;
+    }
+
     const totalCssHeight = src.scrollHeight;
-    const pageHeightCss = (pageH * pxPerPt) / scale;
+    const pageHeightCssFull = (pageH * pxPerPt) / scale;
     let currentCss = 0;
     let first = true;
+    let pendingHeader = null; // header tabel yang perlu diulang di awal halaman ini
 
     while(currentCss < totalCssHeight - 0.5){
-      const idealEndCss = currentCss + pageHeightCss;
+      const repeatHeader = pendingHeader;
+      const headerCssH = repeatHeader ? (repeatHeader.headerBottom - repeatHeader.headerTop) : 0;
+      const availableCss = pageHeightCssFull - headerCssH;
+
+      const idealEndCss = currentCss + availableCss;
       let endCss = idealEndCss >= totalCssHeight ? totalCssHeight : findSafeBreakCss(idealEndCss, currentCss);
       if(endCss <= currentCss) endCss = idealEndCss; // fallback safety, hindari infinite loop
 
       const yCanvas = Math.round(currentCss * scale);
       const hCanvas = Math.round((endCss - currentCss) * scale);
+      const headerCanvasH = Math.round(headerCssH * scale);
+
       const sliceCanvas = document.createElement('canvas');
       sliceCanvas.width = canvas.width;
-      sliceCanvas.height = hCanvas;
+      sliceCanvas.height = headerCanvasH + hCanvas;
       const ctx = sliceCanvas.getContext('2d');
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0,0,sliceCanvas.width, sliceCanvas.height);
-      ctx.drawImage(canvas, 0, yCanvas, canvas.width, hCanvas, 0, 0, canvas.width, hCanvas);
-      const sliceDataUrl = sliceCanvas.toDataURL('image/png'); // PNG lossless — warna gak pudar
-      const sliceHeightPt = hCanvas / pxPerPt;
+      if(repeatHeader){
+        const hY = Math.round(repeatHeader.headerTop * scale);
+        ctx.drawImage(canvas, 0, hY, canvas.width, headerCanvasH, 0, 0, canvas.width, headerCanvasH);
+      }
+      ctx.drawImage(canvas, 0, yCanvas, canvas.width, hCanvas, 0, headerCanvasH, canvas.width, hCanvas);
+
+      // JPEG, bukan PNG: foto cover + screenshot bikin PNG lossless jadi puluhan MB
+      // per halaman. JPEG kualitas tinggi (0.92) tetap tajam untuk dokumen teks/tabel
+      // tapi ukurannya jauh lebih wajar untuk dikirim/di-attach.
+      const sliceDataUrl = sliceCanvas.toDataURL('image/jpeg', 0.92);
+      const sliceHeightPt = (headerCanvasH + hCanvas) / pxPerPt;
 
       if(!first) pdf.addPage();
-      pdf.addImage(sliceDataUrl, 'PNG', 0, 0, pageW, sliceHeightPt);
+      pdf.addImage(sliceDataUrl, 'JPEG', 0, 0, pageW, sliceHeightPt);
       first = false;
       currentCss = endCss;
+      pendingHeader = headerToRepeatAt(endCss);
     }
     pdf.save(m.filename + '.pdf');
   } catch(err){
