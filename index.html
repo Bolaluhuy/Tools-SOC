@@ -4855,6 +4855,24 @@
       return null;
     }
 
+    function dataUrlToUint8Array(dataUrl) {
+      if (!dataUrl || typeof dataUrl !== 'string') return null;
+      try {
+        const parts = dataUrl.split(',');
+        const base64 = parts.length > 1 ? parts[1] : parts[0];
+        const binary = atob(base64);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+      } catch (err) {
+        console.error('Error converting dataUrl to Uint8Array:', err);
+        return null;
+      }
+    }
+
     function handleCover(evtOrFile) {
       const file = (evtOrFile instanceof File) ? evtOrFile : evtOrFile.target.files[0];
       if (!file) return;
@@ -4862,6 +4880,7 @@
       const readerUrl = new FileReader();
       readerUrl.onload = e => {
         coverImgData = e.target.result;
+        coverImgBytes = dataUrlToUint8Array(coverImgData);
         document.getElementById('dz_cover').textContent = '✓ ' + file.name;
         document.getElementById('dz_cover').classList.add('filled');
         showToast('Gambar cover berhasil dimuat');
@@ -5313,7 +5332,11 @@
         evidenceItems.push(item);
 
         const rUrl = new FileReader();
-        rUrl.onload = e => { item.dataUrl = e.target.result; renderEvidenceList(); };
+        rUrl.onload = e => { 
+          item.dataUrl = e.target.result; 
+          item.bytes = dataUrlToUint8Array(item.dataUrl);
+          renderEvidenceList(); 
+        };
         rUrl.readAsDataURL(file);
 
         const rBytes = new FileReader();
@@ -5494,6 +5517,15 @@
         </tr>
       `).join('');
 
+      const evidenceRowsHtml = evidenceItems.map(it => `
+        <tr>
+          <td style="border:1px solid #cbd5e1; padding:10pt; text-align:center; background:#ffffff;">
+            <img src="${it.dataUrl}" style="max-width:500pt; max-height:280pt; height:auto; display:inline-block; border-radius:4pt; border:1pt solid #cbd5e1;"><br>
+            <p style="font-size:9.5pt; color:#475569; margin-top:6pt; font-weight:bold;">Caption: ${escapeHtml(it.caption || it.name)}</p>
+          </td>
+        </tr>
+      `).join('');
+
       const htmlContent = `
         <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
         <head>
@@ -5600,12 +5632,20 @@
             ${incRowsHtml}
           </table>` : ''}
 
-          <h2>${incRows.length ? '7' : '6'}. Issues, Recommendations & Sign-Off</h2>
+          <h2>${incRows.length ? '7' : '6'}. Issues, Recommendations & Notes</h2>
           <p><b>Issues & Constraints:</b></p>
           <ul>${m.issues.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
           <p><b>Tuning Recommendations:</b></p>
           <ul>${m.reco.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
 
+          ${evidenceItems.length ? `
+          <h2>${incRows.length ? '8' : '7'}. Evidence &amp; Screenshots</h2>
+          <table style="width:100%; border:none; margin-bottom:12pt;">
+            ${evidenceRowsHtml}
+          </table>
+          ` : ''}
+
+          <h2>Sign-off Verification</h2>
           <table>
             <tr><td style="width:30%; background:#f8fafc; font-weight:bold;">Prepared by</td><td>${escapeHtml(m.preparedby)} (SOC L1 Analyst)</td></tr>
             <tr><td style="background:#f8fafc; font-weight:bold;">Reviewed by</td><td>${escapeHtml(m.reviewedby)} (SOC L2 / Shift Lead)</td></tr>
@@ -5895,7 +5935,7 @@
     async function downloadDailyWord() {
       const btnEl = document.getElementById('btnDownloadWord');
       if (btnEl) { btnEl.textContent = '⏳ Menyiapkan Word...'; btnEl.disabled = true; }
-      showToast('Menyusun dokumen Word (.docx / .doc)...');
+      showToast('Menyusun dokumen Word lengkap (.docx)...');
 
       try {
         const m = gatherDailyModel();
@@ -5905,28 +5945,30 @@
           try {
             const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, HeadingLevel, ImageRun, PageBreak, AlignmentType } = window.docx;
 
-            const cell = (text, isHeader = false, widthPercent = 50) => new TableCell({
+            const cell = (text, isHeader = false, widthPercent = 50, align = AlignmentType.LEFT) => new TableCell({
               width: { size: widthPercent, type: WidthType.PERCENTAGE },
               children: [new Paragraph({
+                alignment: align,
                 children: [new TextRun({ text: String(text || '-'), bold: isHeader, font: 'Calibri', size: 19 })]
               })]
             });
 
             const row = (label, val) => new TableRow({
-              children: [cell(label, true, 35), cell(val, false, 65)]
+              children: [cell(label, true, 32), cell(val, false, 68)]
             });
 
             let docChildren = [];
 
             // Add Cover Page if uploaded
-            if (coverImgBytes && window.docx.ImageRun) {
+            const finalCoverBytes = coverImgBytes || dataUrlToUint8Array(coverImgData);
+            if (finalCoverBytes && ImageRun) {
               try {
                 docChildren.push(new Paragraph({
                   alignment: AlignmentType.CENTER,
                   children: [
                     new ImageRun({
-                      data: coverImgBytes,
-                      transformation: { width: 550, height: 750 }
+                      data: finalCoverBytes,
+                      transformation: { width: 550, height: 720 }
                     })
                   ]
                 }));
@@ -5936,11 +5978,14 @@
               }
             }
 
+            // Top Header Bar & Titles
             docChildren.push(
               new Paragraph({ text: "CONFIDENTIAL — SOC L1 OPERATIONAL SHIFT REPORT", heading: HeadingLevel.HEADING_1 }),
               new Paragraph({ text: `Customer: ${m.customer} | Date: ${m.date} | Shift: ${m.shift} (${m.shifttime})` }),
-              new Paragraph({ text: `Analyst: ${m.engineer} | Status: ${m.status}` }),
+              new Paragraph({ text: `SOC L1 Analyst: ${m.engineer} | Status: ${m.status}` }),
               new Paragraph({ text: "" }),
+              
+              // 1. Document Control
               new Paragraph({ text: "1. Document Control & Header", heading: HeadingLevel.HEADING_2 }),
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
@@ -5953,6 +5998,8 @@
                 ]
               }),
               new Paragraph({ text: "" }),
+              
+              // 2. Executive Summary
               new Paragraph({ text: "2. Shift Narrative & Executive Summary", heading: HeadingLevel.HEADING_2 }),
               new Paragraph({ text: m.summary }),
               new Paragraph({ text: "" }),
@@ -5966,28 +6013,169 @@
                 ]
               }),
               new Paragraph({ text: "" }),
+              
+              // PageBreak before Section 3
               new Paragraph({ children: [new PageBreak()] }),
-              new Paragraph({ text: "3. Alert Metrics & Severity Distribution", heading: HeadingLevel.HEADING_2 }),
+              
+              // 3. Alert Volume & Severity Distribution
+              new Paragraph({ text: "3. Alert Volume & Severity Distribution", heading: HeadingLevel.HEADING_2 }),
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 rows: [
-                  new TableRow({ children: [cell("Severity Level", true, 33), cell("Distinct Rules", true, 33), cell("Total Events", true, 34)] }),
-                  new TableRow({ children: [cell("Low", false, 33), cell(String(m.stats.bucket.Low.rules), false, 33), cell(String(m.stats.bucket.Low.events), false, 34)] }),
-                  new TableRow({ children: [cell("Medium", false, 33), cell(String(m.stats.bucket.Medium.rules), false, 33), cell(String(m.stats.bucket.Medium.events), false, 34)] }),
-                  new TableRow({ children: [cell("High", false, 33), cell(String(m.stats.bucket.High.rules), false, 33), cell(String(m.stats.bucket.High.events), false, 34)] }),
-                  new TableRow({ children: [cell("Critical", false, 33), cell(String(m.stats.bucket.Critical.rules), false, 33), cell(String(m.stats.bucket.Critical.events), false, 34)] })
+                  new TableRow({ children: [cell("Severity Level", true, 34), cell("Distinct Rules", true, 33, AlignmentType.CENTER), cell("Total Events", true, 33, AlignmentType.RIGHT)] }),
+                  new TableRow({ children: [cell("Low", false, 34), cell(String(m.stats.bucket.Low.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Low.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
+                  new TableRow({ children: [cell("Medium", false, 34), cell(String(m.stats.bucket.Medium.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Medium.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
+                  new TableRow({ children: [cell("High", false, 34), cell(String(m.stats.bucket.High.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.High.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
+                  new TableRow({ children: [cell("Critical", false, 34), cell(String(m.stats.bucket.Critical.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Critical.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] })
                 ]
-              }),
+              })
+            );
+
+            // Top Triggered Rules
+            if (m.stats.topRules && m.stats.topRules.length > 0) {
+              docChildren.push(
+                new Paragraph({ text: "" }),
+                new Paragraph({ text: "Top Triggered Rules by Event Volume", heading: HeadingLevel.HEADING_3 }),
+                new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({ children: [cell("No", true, 8, AlignmentType.CENTER), cell("Rule ID", true, 20), cell("Description", true, 44), cell("Level", true, 12, AlignmentType.CENTER), cell("Count", true, 16, AlignmentType.RIGHT)] }),
+                    ...m.stats.topRules.map((r, i) => new TableRow({
+                      children: [
+                        cell(String(i + 1), false, 8, AlignmentType.CENTER),
+                        cell(r.rule, true, 20),
+                        cell(r.desc, false, 44),
+                        cell(r.level, false, 12, AlignmentType.CENTER),
+                        cell(r.events.toLocaleString(), false, 16, AlignmentType.RIGHT)
+                      ]
+                    }))
+                  ]
+                })
+              );
+            }
+
+            // 4. Monitoring Log
+            docChildren.push(
               new Paragraph({ text: "" }),
-              new Paragraph({ text: "4. Issues & Recommendations", heading: HeadingLevel.HEADING_2 }),
-              new Paragraph({ text: `Issues: ${m.issues}` }),
-              new Paragraph({ text: `Recommendations: ${m.reco}` }),
+              new Paragraph({ text: "4. Monitoring & Alert Review Log", heading: HeadingLevel.HEADING_2 })
+            );
+            if (monRows && monRows.length > 0) {
+              docChildren.push(
+                new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({ children: [cell("Time", true, 15), cell("Rule ID", true, 20), cell("Description", true, 25), cell("Action Taken", true, 22), cell("Result", true, 18)] }),
+                    ...monRows.map(r => new TableRow({
+                      children: [cell(r.time, false, 15), cell(r.rule, true, 20), cell(r.desc, false, 25), cell(r.action, false, 22), cell(r.result, false, 18)]
+                    }))
+                  ]
+                })
+              );
+            } else {
+              docChildren.push(new Paragraph({ text: "Routine security monitoring maintained. Zero high-severity alerts required manual escalation." }));
+            }
+
+            // 5. Shift Tasks
+            docChildren.push(
               new Paragraph({ text: "" }),
+              new Paragraph({ text: "5. Shift Tasks & Operational Activities", heading: HeadingLevel.HEADING_2 })
+            );
+            if (taskRows && taskRows.length > 0) {
+              docChildren.push(
+                new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({ children: [cell("Task Description", true, 45), cell("Status", true, 20), cell("Notes", true, 35)] }),
+                    ...taskRows.map(r => new TableRow({
+                      children: [cell(r.task, false, 45), cell(r.status, true, 20), cell(r.notes, false, 35)]
+                    }))
+                  ]
+                })
+              );
+            } else {
+              docChildren.push(new Paragraph({ text: "Scheduled operational tasks completed." }));
+            }
+
+            // 6. Incidents (if any)
+            if (incRows && incRows.length > 0) {
+              docChildren.push(
+                new Paragraph({ text: "" }),
+                new Paragraph({ text: "6. Incidents & Escalations", heading: HeadingLevel.HEADING_2 }),
+                new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({ children: [cell("Time", true, 15), cell("Incident", true, 35), cell("Severity", true, 20), cell("Action / Escalation", true, 30)] }),
+                    ...incRows.map(r => new TableRow({
+                      children: [cell(r.time, false, 15), cell(r.incident, true, 35), cell(r.severity, false, 20), cell(r.action, false, 30)]
+                    }))
+                  ]
+                })
+              );
+            }
+
+            // 7. Issues & Recommendations
+            docChildren.push(
+              new Paragraph({ text: "" }),
+              new Paragraph({ text: `${incRows.length ? '7' : '6'}. Issues, Recommendations & Notes`, heading: HeadingLevel.HEADING_2 }),
+              new Paragraph({ children: [new TextRun({ text: "Issues & Constraints:", bold: true })] }),
+              ...m.issues.split('\n').filter(Boolean).map(x => new Paragraph({ text: `• ${x}` })),
+              new Paragraph({ text: "" }),
+              new Paragraph({ children: [new TextRun({ text: "Tuning Recommendations:", bold: true })] }),
+              ...m.reco.split('\n').filter(Boolean).map(x => new Paragraph({ text: `• ${x}` }))
+            );
+
+            // 8. Evidence & Screenshots
+            if (evidenceItems && evidenceItems.length > 0) {
+              docChildren.push(
+                new Paragraph({ text: "" }),
+                new Paragraph({ text: `${incRows.length ? '8' : '7'}. Evidence & Screenshots`, heading: HeadingLevel.HEADING_2 })
+              );
+
+              for (let item of evidenceItems) {
+                const itemBytes = item.bytes || dataUrlToUint8Array(item.dataUrl);
+                if (itemBytes && ImageRun) {
+                  try {
+                    docChildren.push(
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                          new ImageRun({
+                            data: itemBytes,
+                            transformation: { width: 480, height: 260 }
+                          })
+                        ]
+                      }),
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                          new TextRun({ text: `Caption: ${item.caption || item.name}`, italics: true, size: 18, color: '64748B' })
+                        ]
+                      }),
+                      new Paragraph({ text: "" })
+                    );
+                  } catch (evImgErr) {
+                    console.warn('Evidence ImageRun error:', evImgErr);
+                  }
+                }
+              }
+            }
+
+            // 9. Sign-off Verification
+            docChildren.push(
+              new Paragraph({ text: "" }),
+              new Paragraph({ text: "Sign-off Verification", heading: HeadingLevel.HEADING_2 }),
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
                 rows: [
                   row("Prepared by", `${m.preparedby} (SOC L1 Analyst)`),
                   row("Reviewed by", `${m.reviewedby} (SOC L2 / Shift Lead)`)
+                ]
+              }),
+              new Paragraph({ text: "" }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                  new TextRun({ text: `CONFIDENTIAL | Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}`, size: 16, color: '64748B' })
                 ]
               })
             );
@@ -6004,7 +6192,7 @@
             a.href = URL.createObjectURL(blob);
             a.download = `${m.filename}.docx`;
             a.click();
-            showToast(`Word (.docx) tersimpan: ${m.filename}.docx`);
+            showToast(`Word (.docx) lengkap tersimpan: ${m.filename}.docx`);
             return;
           } catch (packErr) {
             console.warn('docx Packer fallback to Word Document XML:', packErr);
