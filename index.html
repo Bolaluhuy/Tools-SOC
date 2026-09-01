@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NEXUS // SOC Analyst Cyber Workbench &amp; Operations Suite v2.6</title>
+  <title>BeX // SOC Analyst Cyber Workbench &amp; Operations Suite v2.6</title>
   <meta name="description"
     content="Ultra-modern, offline-ready SOC Analyst Intelligence Workbench. IOC Extraction, Cyber Decoders, SIEM Query Builder, L1 Daily Report Builder (Word/PDF), Shift Schedule Matrix, Phishing Header Analyzer, and Threat Triage Suite.">
 
@@ -1992,7 +1992,7 @@
       </div>
       <div class="brand-text">
         <div class="brand-title">
-          <span>NEXUS</span>
+          <span>BeX</span>
           <span class="brand-badge">SOC WORKBENCH v2.6</span>
         </div>
         <span class="brand-sub">Incident Triage &amp; Operations Suite</span>
@@ -2771,7 +2771,7 @@
                     <div><label class="cyber-label">Shift Time Range</label><input type="text" class="cyber-input"
                         id="d_shifttime" placeholder="15:00 - 23:00"></div>
                     <div><label class="cyber-label">SOC L1 Engineer</label><input type="text" class="cyber-input"
-                        id="d_engineer" value="Bilal"></div>
+                        id="d_engineer" value="Bilal" oninput="autoUpdateFilename()"></div>
                   </div>
                   <div
                     style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin-top:10px;">
@@ -3025,7 +3025,7 @@
                     placeholder="-">Continue 24/7 security monitoring and review top rule baselines.</textarea>
                   <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
                     <div><label class="cyber-label">Prepared by (SOC L1)</label><input type="text" class="cyber-input"
-                        id="d_preparedby" value="Bilal"></div>
+                        id="d_preparedby" value="Bilal" oninput="autoUpdateFilename()"></div>
                     <div><label class="cyber-label">Reviewed by (Shift Lead / L2)</label><input type="text"
                         class="cyber-input" id="d_reviewedby" value="Rama"></div>
                   </div>
@@ -5086,12 +5086,60 @@
       'Shift 3': '23:00 - 07:00'
     };
 
+    const ENGINEER_INITIALS = {
+      'bilal': 'MNB',
+      'naufal': 'MNB',
+      'm. naufal': 'MNB',
+      'm. naufal bilal syam': 'MNB',
+      'muhammad naufal bilal syam': 'MNB',
+      'jingga': 'JA',
+      'jingga ananta': 'JA',
+      'rama': 'RP',
+      'rama pratama': 'RP',
+      'akmal': 'MA',
+      'muhammad akmal': 'MA'
+    };
+
+    function getEngineerInitial(name) {
+      if (!name) return 'MNB';
+      const clean = name.trim().toLowerCase();
+      for (const [k, v] of Object.entries(ENGINEER_INITIALS)) {
+        if (clean.includes(k)) return v;
+      }
+      const parts = clean.split(/\s+/).filter(Boolean);
+      if (parts.length >= 2) {
+        return parts.map(p => p[0].toUpperCase()).join('').slice(0, 3);
+      }
+      return clean.slice(0, 3).toUpperCase();
+    }
+
+    function formatFilenameDate(dateStr) {
+      let d = new Date();
+      if (dateStr) {
+        const parsed = new Date(dateStr);
+        if (!isNaN(parsed.getTime())) {
+          d = parsed;
+        } else {
+          const m = dateStr.match(/(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/);
+          if (m) {
+            const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, mei: 4, jun: 5, jul: 6, aug: 7, agu: 7, agustus: 7, sep: 8, sept: 8, september: 8, oct: 9, okt: 9, oktober: 9, nov: 10, november: 10, dec: 11, des: 11, desember: 11 };
+            const mIdx = months[m[2].toLowerCase().slice(0, 3)] ?? 8;
+            d = new Date(parseInt(m[3], 10), mIdx, parseInt(m[1], 10));
+          }
+        }
+      }
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = String(d.getFullYear());
+      return `${day}${month}${year}`;
+    }
+
     function autoFillDailyDefaults(force = false) {
       const now = new Date();
       const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       const dateStr = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
-      
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
       const dateInput = document.getElementById('d_date');
       const timeInput = document.getElementById('d_time');
       const shiftSelect = document.getElementById('d_shift');
@@ -5134,6 +5182,29 @@
         periodInput.value = `${dateStr} (${currentShiftTime})`;
       }
 
+      // Auto-detect scheduled engineer on duty for today and this shift
+      let scheduledEng = null;
+      try {
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth() + 1;
+        const curDay = now.getDate();
+        const sched = (curYear === 2026 && curMonth === 8) ? HISTORICAL_AUGUST_2026 : generateStandardRotation(curYear, curMonth);
+        const shiftTag = currentShift === 'Shift 1' ? 'PAGI' : currentShift === 'Shift 2' ? 'SIANG' : 'MALAM';
+        for (let eng of ENGINEERS) {
+          if (sched[eng] && sched[eng][curDay] === shiftTag) {
+            scheduledEng = eng;
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn('Schedule lookup warning:', err);
+      }
+
+      if (scheduledEng && (!engineerInput.value || force)) {
+        if (engineerInput) engineerInput.value = scheduledEng;
+        if (preparedByInput) preparedByInput.value = scheduledEng;
+      }
+
       // Sync active clocked-in engineer from attendance records if present
       if (attendanceRecords && attendanceRecords.length > 0) {
         const lastRecord = attendanceRecords[0];
@@ -5149,16 +5220,17 @@
     }
 
     function autoUpdateFilename() {
-      const cust = document.getElementById('d_customer')?.value || 'Heritage_Minerals';
-      const shift = document.getElementById('d_shift')?.value || 'Shift2';
-      const date = document.getElementById('d_date')?.value || '';
-      const cleanDate = date.replace(/\s+/g, '');
-      const cleanCust = cust.replace(/\s+/g, '_');
-      const cleanShift = shift.replace(/\s+/g, '');
+      const shift = document.getElementById('d_shift')?.value || 'Shift 1';
+      const engineer = document.getElementById('d_engineer')?.value || document.getElementById('d_preparedby')?.value || 'Bilal';
+      const dateStr = document.getElementById('d_date')?.value || '';
+      
+      const dateFormatted = formatFilenameDate(dateStr);
+      const initial = getEngineerInitial(engineer);
+      const shiftClean = shift.replace(/\s+/g, '');
       
       const fileInput = document.getElementById('d_filename');
       if (fileInput) {
-        fileInput.value = `${cleanCust}_${cleanShift}_${cleanDate}`;
+        fileInput.value = `${dateFormatted}_${initial}_${shiftClean}_Daily-Report`;
       }
     }
 
@@ -5187,6 +5259,22 @@
           document.getElementById('d_period').value = `${dateVal} (${SHIFT_HOURS[shift]})`;
         }
       }
+      // Look up who is on duty for this newly selected shift on current/selected date
+      try {
+        const now = new Date();
+        const curYear = now.getFullYear();
+        const curMonth = now.getMonth() + 1;
+        const curDay = now.getDate();
+        const sched = (curYear === 2026 && curMonth === 8) ? HISTORICAL_AUGUST_2026 : generateStandardRotation(curYear, curMonth);
+        const shiftTag = shift === 'Shift 1' ? 'PAGI' : shift === 'Shift 2' ? 'SIANG' : 'MALAM';
+        for (let eng of ENGINEERS) {
+          if (sched[eng] && sched[eng][curDay] === shiftTag) {
+            document.getElementById('d_engineer').value = eng;
+            document.getElementById('d_preparedby').value = eng;
+            break;
+          }
+        }
+      } catch (e) {}
       autoUpdateFilename();
     }
 
@@ -5480,7 +5568,7 @@
             <tr><td style="background:#f8fafc; font-weight:bold;">Total Shift Tasks</td><td>${escapeHtml(String(m.task))} (Completed: ${escapeHtml(String(m.taskdone))})</td></tr>
           </table>
 
-          <h2>3. Alert Volume & Severity Distribution</h2>
+          <h2 style="page-break-before: always; margin-top: 14pt;">3. Alert Volume &amp; Severity Distribution</h2>
           <table>
             <tr><th>Severity Level</th><th style="width:25%; text-align:center;">Distinct Rules</th><th style="width:25%; text-align:right;">Total Events</th></tr>
             ${bRow('Low')}${bRow('Medium')}${bRow('High')}${bRow('Critical')}
@@ -5524,7 +5612,7 @@
           </table>
 
           <div class="footer-note">
-            CONFIDENTIAL // NEXUS SOC WORKBENCH INTELLIGENCE SUITE — Generated: ${new Date().toLocaleString('id-ID')}
+            CONFIDENTIAL &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
           </div>
         </body>
         </html>
@@ -5555,7 +5643,7 @@
           <div class="rbody" style="padding:16px 20px;">
             ${coverImgData && !isForExport ? `
               <div class="report-section-block" style="text-align:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
-                <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">★ Cover Page (Halaman 1 PDF &amp; Word)</div>
+                <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">★ Cover Page (Page 1 in PDF &amp; Word)</div>
                 <img src="${coverImgData}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
               </div>
             ` : ''}
@@ -5584,24 +5672,21 @@
               </table>
             </div>
 
-            <!-- Block 3A: Severity Distribution Table (Modular so it fits seamlessly on Page 1) -->
-            <div class="report-section-block">
+            <!-- Block 3: Placed on Page 2 with explicit page-break-before -->
+            <div class="report-section-block page-break-before">
               <h3>3. Alert Volume &amp; Severity Distribution</h3>
               <table>
                 <tr><th>Severity Level</th><th style="width:25%; text-align:center;">Distinct Rules</th><th style="width:25%; text-align:right;">Total Events</th></tr>
                 ${bRow('Low')}${bRow('Medium')}${bRow('High')}${bRow('Critical')}
               </table>
-            </div>
 
-            <!-- Block 3B: Top Triggered Rules by Event Volume -->
-            ${topRulesHtml ? `
-            <div class="report-section-block">
-              <h4 style="font-size:12px; color:#0f172a; margin:10px 0 6px; font-weight:700;">Top Triggered Rules by Event Volume</h4>
+              ${topRulesHtml ? `
+              <h4 style="font-size:12px; color:#0f172a; margin:12px 0 6px; font-weight:700;">Top Triggered Rules by Event Volume</h4>
               <table>
                 <tr><th style="width:40px; text-align:center;">No</th><th style="width:100px;">Rule ID</th><th>Description</th><th style="width:60px; text-align:center;">Level</th><th style="width:90px; text-align:right;">Count</th></tr>
                 ${topRulesHtml}
-              </table>
-            </div>` : ''}
+              </table>` : ''}
+            </div>
 
             <!-- Block 4: Monitoring Log -->
             <div class="report-section-block">
@@ -5740,9 +5825,9 @@
           pdf.line(marginL, pageH - 24, pageW - marginR, pageH - 24);
           pdf.setTextColor(100, 116, 139);
           pdf.setFontSize(8);
-          pdf.text('NEXUS // SOC WORKBENCH INTELLIGENCE SUITE', marginL, pageH - 12);
-          pdf.text(`Waktu Cetak: ${new Date().toLocaleString('id-ID')}`, pageW / 2, pageH - 12, { align: 'center' });
-          pdf.text(`Halaman ${pageNum}`, pageW - marginR, pageH - 12, { align: 'right' });
+          pdf.text('CONFIDENTIAL', marginL, pageH - 12);
+          pdf.text(`Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}`, pageW / 2, pageH - 12, { align: 'center' });
+          pdf.text(`Page ${pageNum}`, pageW - marginR, pageH - 12, { align: 'right' });
         }
 
         // 1. If Cover Image uploaded, render on Page 1 Full Page
@@ -5773,12 +5858,13 @@
 
         const blocks = Array.from(printContainer.querySelectorAll('.report-section-block'));
         for (let block of blocks) {
+          const isBreakBefore = block.classList.contains('page-break-before');
           const canvas = await html2canvas(block, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
           const imgData = canvas.toDataURL('image/jpeg', 0.96);
           const imgH = (canvas.height * contentW) / canvas.width;
 
-          // If block doesn't fit on rest of current page, break to next page
-          if (currentY + imgH > pageH - marginB) {
+          // If block explicitly has page-break-before or doesn't fit on rest of current page, break to next page
+          if (isBreakBefore || (currentY + imgH > pageH - marginB)) {
             pdf.addPage();
             currentPageNum++;
             drawHeaderAndFooter(currentPageNum);
@@ -5880,6 +5966,7 @@
                 ]
               }),
               new Paragraph({ text: "" }),
+              new Paragraph({ children: [new PageBreak()] }),
               new Paragraph({ text: "3. Alert Metrics & Severity Distribution", heading: HeadingLevel.HEADING_2 }),
               new Table({
                 width: { size: 100, type: WidthType.PERCENTAGE },
