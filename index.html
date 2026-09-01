@@ -3090,13 +3090,10 @@
                 placeholder="Heritage_Minerals_Shift2_13Aug2026">
             </div>
 
-            <button class="btn btn-primary mt-3" style="width:100%;" onclick="previewDailyReport()">👁️ Preview Laporan
-              HTML</button>
-            <div style="display:flex; gap:8px; margin-top:8px;">
-              <button class="btn btn-secondary btn-sm" id="btnDownloadWord" style="flex:1;"
-                onclick="downloadDailyWord()">📝 Word (.docx)</button>
-              <button class="btn btn-secondary btn-sm" id="btnDownloadPdf" style="flex:1;"
-                onclick="downloadDailyPdf()">📄 PDF Document</button>
+            <button class="btn btn-secondary mt-3" style="width:100%;" onclick="previewDailyReport()">👁️ Preview Laporan HTML</button>
+            <div style="margin-top:8px;">
+              <button class="btn btn-primary" id="btnDownloadPdf" style="width:100%; padding:10px;"
+                onclick="downloadDailyPdf()">📄 Unduh Laporan PDF (Official PDF)</button>
             </div>
           </div>
         </div>
@@ -3106,9 +3103,8 @@
           <div class="card-header">
             <span class="card-title">Pratinjau Laporan Harian (Document Preview)</span>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-secondary btn-xs" onclick="downloadDailyWord()">📝 Download Word</button>
-              <button class="btn btn-secondary btn-xs" onclick="downloadDailyPdf()">📄 Download PDF</button>
-              <button class="btn btn-primary btn-xs" onclick="window.print()">🖨️ Print Document</button>
+              <button class="btn btn-primary btn-xs" onclick="downloadDailyPdf()">📄 Unduh PDF</button>
+              <button class="btn btn-secondary btn-xs" onclick="window.print()">🖨️ Print Document</button>
             </div>
           </div>
           <div id="dailyReportPreview"></div>
@@ -5490,190 +5486,6 @@
       };
     }
 
-    function generateWordDocumentBlob(m) {
-      const b = m.stats.bucket;
-      const bRow = name => `<tr><td style="border:1px solid #cbd5e1; padding:5px 8px; font-weight:bold; background:#f8fafc;">${name}</td><td style="border:1px solid #cbd5e1; padding:5px 8px; text-align:center;">${b[name].rules}</td><td style="border:1px solid #cbd5e1; padding:5px 8px; text-align:right;">${b[name].events.toLocaleString()}</td></tr>`;
-
-      const topRulesRows = m.stats.topRules.map((r, i) => `
-        <tr>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; text-align:center;">${i + 1}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; font-weight:bold; font-family:Consolas, monospace;">${escapeHtml(r.rule)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.desc)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; text-align:center; font-weight:bold;">${r.level}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; text-align:right;">${r.events.toLocaleString()}</td>
-        </tr>
-      `).join('');
-
-      const monRowsHtml = monRows.map(r => `
-        <tr>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.time)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; font-weight:bold; font-family:Consolas, monospace;">${escapeHtml(r.rule)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.desc)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.action)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.result)}</td>
-        </tr>
-      `).join('');
-
-      const taskRowsHtml = taskRows.map(r => `
-        <tr>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.task)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; font-weight:bold;">${escapeHtml(r.status)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.notes)}</td>
-        </tr>
-      `).join('');
-
-      const incRowsHtml = incRows.map(r => `
-        <tr>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.time)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px; font-weight:bold;">${escapeHtml(r.incident)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.severity)}</td>
-          <td style="border:1px solid #cbd5e1; padding:5px 8px;">${escapeHtml(r.action)}</td>
-        </tr>
-      `).join('');
-
-      const evidenceRowsHtml = evidenceItems.map(it => `
-        <tr>
-          <td style="border:1px solid #cbd5e1; padding:10pt; text-align:center; background:#ffffff;">
-            <img src="${it.dataUrl}" style="max-width:500pt; max-height:280pt; height:auto; display:inline-block; border-radius:4pt; border:1pt solid #cbd5e1;"><br>
-            <p style="font-size:9.5pt; color:#475569; margin-top:6pt; font-weight:bold;">Caption: ${escapeHtml(it.caption || it.name)}</p>
-          </td>
-        </tr>
-      `).join('');
-
-      const htmlContent = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-          <meta charset="utf-8">
-          <title>${escapeHtml(m.filename)}</title>
-          <!--[if gte mso 9]>
-          <xml>
-            <w:WordDocument>
-              <w:View>Print</w:View>
-              <w:Zoom>100</w:Zoom>
-              <w:DoNotOptimizeForBrowser/>
-            </w:WordDocument>
-          </xml>
-          <![endif]-->
-          <style>
-            @page {
-              size: 210mm 297mm;
-              margin: 20mm 20mm 20mm 20mm;
-              mso-header-margin: 10mm;
-              mso-footer-margin: 10mm;
-            }
-            body {
-              font-family: 'Calibri', 'Segoe UI', Arial, sans-serif;
-              font-size: 11pt;
-              color: #1e293b;
-              line-height: 1.45;
-            }
-            h1 { color: #0284c7; font-size: 17pt; margin-top: 10pt; margin-bottom: 4pt; }
-            h2 { color: #0f172a; font-size: 12.5pt; margin-top: 14pt; margin-bottom: 5pt; border-bottom: 1.5pt solid #0284c7; padding-bottom: 2pt; }
-            p { margin-top: 3pt; margin-bottom: 5pt; }
-            table { width: 100%; border-collapse: collapse; margin-top: 4pt; margin-bottom: 10pt; font-size: 9.5pt; }
-            th { background: #0284c7; color: #ffffff; padding: 5pt 7pt; text-align: left; border: 1pt solid #0284c7; font-weight: bold; }
-            td { padding: 4pt 7pt; border: 1pt solid #cbd5e1; }
-            .header-banner { background: #0f172a; color: #ffffff; padding: 7pt; font-weight: bold; text-align: center; margin-bottom: 10pt; font-size: 9.5pt; letter-spacing: 1pt; }
-            .footer-note { font-size: 8.5pt; color: #64748b; margin-top: 16pt; text-align: center; border-top: 1pt solid #e2e8f0; padding-top: 5pt; }
-          </style>
-        </head>
-        <body>
-          ${coverImgData ? `
-            <div style="page-break-after: always; text-align: center; margin: 0; padding: 0;">
-              <table style="width:100%; border:none; text-align:center;">
-                <tr style="border:none;">
-                  <td style="border:none; text-align:center; vertical-align:middle; padding:0;">
-                    <img src="${coverImgData}" style="max-width:100%; max-height:700pt; height:auto; display:inline-block;">
-                  </td>
-                </tr>
-              </table>
-            </div>
-          ` : ''}
-
-          <div class="header-banner">CONFIDENTIAL — SOC L1 OPERATIONAL SHIFT REPORT</div>
-          
-          <h1 style="margin-top:0;">SOC L1 Operational Shift Report</h1>
-          <p style="color:#64748b; font-size:10pt;"><b>Customer:</b> ${escapeHtml(m.customer)} &nbsp;|&nbsp; <b>Date & Shift:</b> ${escapeHtml(m.date)} — ${escapeHtml(m.shift)} (${escapeHtml(m.shifttime)}) &nbsp;|&nbsp; <b>Analyst:</b> ${escapeHtml(m.engineer)}</p>
-
-          <h2>1. Document Control & Header</h2>
-          <table>
-            <tr><td style="width:30%; background:#f8fafc; font-weight:bold;">Customer / Project</td><td><b>${escapeHtml(m.customer)}</b></td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Report Date & Shift</td><td>${escapeHtml(m.date)} ${escapeHtml(m.time)} — ${escapeHtml(m.shift)} (${escapeHtml(m.shifttime)})</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">SOC L1 Engineer</td><td>${escapeHtml(m.engineer)}</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Location / Status</td><td>${escapeHtml(m.location)} / ${escapeHtml(m.reportstatus)}</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Reporting Period</td><td>${escapeHtml(m.period)}</td></tr>
-          </table>
-
-          <h2>2. Shift Narrative & Executive Summary</h2>
-          <p>${escapeHtml(m.summary).replace(/\n/g, '<br>')}</p>
-          <table>
-            <tr><td style="width:30%; background:#f8fafc; font-weight:bold;">Overall Security Status</td><td><b>${escapeHtml(m.status.toUpperCase())}</b></td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Total Alerts Reviewed</td><td>${escapeHtml(String(m.reviewed))}</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Total Alerts Escalated</td><td>${escapeHtml(String(m.escalated))} (to ${escapeHtml(String(m.escteam))})</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Total Shift Tasks</td><td>${escapeHtml(String(m.task))} (Completed: ${escapeHtml(String(m.taskdone))})</td></tr>
-          </table>
-
-          <h2 style="page-break-before: always; margin-top: 14pt;">3. Alert Volume &amp; Severity Distribution</h2>
-          <table>
-            <tr><th>Severity Level</th><th style="width:25%; text-align:center;">Distinct Rules</th><th style="width:25%; text-align:right;">Total Events</th></tr>
-            ${bRow('Low')}${bRow('Medium')}${bRow('High')}${bRow('Critical')}
-          </table>
-
-          ${topRulesRows ? `
-          <h2>Top Triggered Rules by Event Volume</h2>
-          <table>
-            <tr><th style="width:40px; text-align:center;">No</th><th style="width:110px;">Rule ID</th><th>Description</th><th style="width:60px; text-align:center;">Level</th><th style="width:90px; text-align:right;">Count</th></tr>
-            ${topRulesRows}
-          </table>` : ''}
-
-          <h2>4. Monitoring & Alert Review Log</h2>
-          <table>
-            <tr><th style="width:80px;">Time</th><th style="width:100px;">Rule ID</th><th>Description</th><th>Action Taken</th><th>Result</th></tr>
-            ${monRowsHtml || '<tr><td colspan="5" style="color:#64748b; text-align:center;">Routine security monitoring maintained. Zero high-severity escalations.</td></tr>'}
-          </table>
-
-          <h2>5. Shift Tasks & Operational Activities</h2>
-          <table>
-            <tr><th style="width:45%;">Task Description</th><th style="width:20%;">Status</th><th>Notes</th></tr>
-            ${taskRowsHtml || '<tr><td colspan="3" style="color:#64748b; text-align:center;">Scheduled shift operational tasks verified and completed.</td></tr>'}
-          </table>
-
-          ${incRows.length ? `
-          <h2>6. Incidents & Escalations</h2>
-          <table>
-            <tr><th style="width:80px;">Time</th><th>Incident</th><th style="width:90px;">Severity</th><th>Action / Escalation</th></tr>
-            ${incRowsHtml}
-          </table>` : ''}
-
-          <h2>${incRows.length ? '7' : '6'}. Issues, Recommendations & Notes</h2>
-          <p><b>Issues & Constraints:</b></p>
-          <ul>${m.issues.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
-          <p><b>Tuning Recommendations:</b></p>
-          <ul>${m.reco.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
-
-          ${evidenceItems.length ? `
-          <h2>${incRows.length ? '8' : '7'}. Evidence &amp; Screenshots</h2>
-          <table style="width:100%; border:none; margin-bottom:12pt;">
-            ${evidenceRowsHtml}
-          </table>
-          ` : ''}
-
-          <h2>Sign-off Verification</h2>
-          <table>
-            <tr><td style="width:30%; background:#f8fafc; font-weight:bold;">Prepared by</td><td>${escapeHtml(m.preparedby)} (SOC L1 Analyst)</td></tr>
-            <tr><td style="background:#f8fafc; font-weight:bold;">Reviewed by</td><td>${escapeHtml(m.reviewedby)} (SOC L2 / Shift Lead)</td></tr>
-          </table>
-
-          <div class="footer-note">
-            CONFIDENTIAL &nbsp;|&nbsp; Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}
-          </div>
-        </body>
-        </html>
-      `;
-
-      return new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
-    }
-
     function buildDailyReportHtml(m, isForExport = false) {
       const b = m.stats.bucket;
       const bRow = name => `<tr><td><b>${name}</b></td><td style="text-align:center;">${b[name].rules}</td><td style="text-align:right;">${b[name].events.toLocaleString()}</td></tr>`;
@@ -5696,7 +5508,7 @@
           <div class="rbody" style="padding:16px 20px;">
             ${coverImgData && !isForExport ? `
               <div class="report-section-block" style="text-align:center; background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:18px;">
-                <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">★ Cover Page (Page 1 in PDF &amp; Word)</div>
+                <div style="font-size:11px; font-weight:800; color:#0284c7; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">★ Cover Page (Page 1 in PDF)</div>
                 <img src="${coverImgData}" style="max-width:100%; max-height:420px; object-fit:contain; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.15);">
               </div>
             ` : ''}
@@ -5725,21 +5537,92 @@
               </table>
             </div>
 
-            <!-- Block 3: Placed on Page 2 with explicit page-break-before -->
-            <div class="report-section-block page-break-before">
+            <!-- Block 3A: 3. Alert Volume & Severity Distribution (Rises up directly on Page 1) -->
+            <div class="report-section-block">
               <h3>3. Alert Volume &amp; Severity Distribution</h3>
               <table>
                 <tr><th>Severity Level</th><th style="width:25%; text-align:center;">Distinct Rules</th><th style="width:25%; text-align:right;">Total Events</th></tr>
                 ${bRow('Low')}${bRow('Medium')}${bRow('High')}${bRow('Critical')}
               </table>
+            </div>
 
-              ${topRulesHtml ? `
-              <h4 style="font-size:12px; color:#0f172a; margin:12px 0 6px; font-weight:700;">Top Triggered Rules by Event Volume</h4>
+            <!-- Block 3B: Top Triggered Rules by Event Volume -->
+            ${topRulesHtml ? `
+            <div class="report-section-block">
+              <h3 style="font-size:13px; color:#0f172a; margin-top:6px; margin-bottom:6px;">Top Triggered Rules by Event Volume</h3>
               <table>
                 <tr><th style="width:40px; text-align:center;">No</th><th style="width:100px;">Rule ID</th><th>Description</th><th style="width:60px; text-align:center;">Level</th><th style="width:90px; text-align:right;">Count</th></tr>
                 ${topRulesHtml}
-              </table>` : ''}
+              </table>
+            </div>` : ''}
+
+            <!-- Block 4: Monitoring Log -->
+            <div class="report-section-block">
+              <h3>4. Monitoring &amp; Alert Review Log</h3>
+              ${monRows.length ? `
+              <table>
+                <tr><th style="width:90px;">Time</th><th style="width:100px;">Rule ID</th><th>Description</th><th>Action Taken</th><th>Result</th></tr>
+                ${monRows.map(r => `<tr><td>${escapeHtml(r.time)}</td><td><b>${escapeHtml(r.rule)}</b></td><td>${escapeHtml(r.desc)}</td><td>${escapeHtml(r.action)}</td><td>${escapeHtml(r.result)}</td></tr>`).join('')}
+              </table>` : '<p style="font-size:11.5px; color:#64748b; margin:4px 0;">Routine security monitoring maintained. Zero high-severity alerts required manual escalation.</p>'}
             </div>
+
+            <!-- Block 5: Shift Tasks -->
+            <div class="report-section-block">
+              <h3>5. Shift Tasks &amp; Operational Activities</h3>
+              ${taskRows.length ? `
+              <table>
+                <tr><th style="width:45%;">Task Description</th><th style="width:20%;">Status</th><th>Notes</th></tr>
+                ${taskRows.map(r => `<tr><td>${escapeHtml(r.task)}</td><td><b>${escapeHtml(r.status)}</b></td><td>${escapeHtml(r.notes)}</td></tr>`).join('')}
+              </table>` : '<p style="font-size:11.5px; color:#64748b; margin:4px 0;">Scheduled operational tasks completed.</p>'}
+            </div>
+
+            <!-- Block 6: Incidents (if any) -->
+            ${incRows.length ? `
+            <div class="report-section-block">
+              <h3>6. Incidents &amp; Escalations</h3>
+              <table>
+                <tr><th style="width:90px;">Time</th><th>Incident</th><th style="width:100px;">Severity</th><th>Action / Escalation</th></tr>
+                ${incRows.map(r => `<tr><td>${escapeHtml(r.time)}</td><td><b>${escapeHtml(r.incident)}</b></td><td>${escapeHtml(r.severity)}</td><td>${escapeHtml(r.action)}</td></tr>`).join('')}
+              </table>
+            </div>` : ''}
+
+            <!-- Block 7: Issues & Recommendations -->
+            <div class="report-section-block">
+              <h3>${incRows.length ? '7' : '6'}. Issues, Recommendations &amp; Notes</h3>
+              <p style="font-size:11.5px; font-weight:700; color:#334155; margin-bottom:3px;">Issues &amp; Constraints:</p>
+              <ul>${m.issues.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+              <p style="font-size:11.5px; font-weight:700; color:#334155; margin-top:6px; margin-bottom:3px;">Tuning Recommendations:</p>
+              <ul>${m.reco.split('\n').map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul>
+            </div>
+
+            <!-- Block 8: Evidence Screenshots -->
+            ${evidenceItems.length ? `
+            <div class="report-section-block">
+              <h3>${incRows.length ? '8' : '7'}. Evidence &amp; Screenshots</h3>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                ${evidenceItems.map(it => `
+                  <div style="border:1px solid #cbd5e1; border-radius:6px; overflow:hidden; background:#ffffff;">
+                    <img src="${it.dataUrl}" style="width:100%; max-height:250px; object-fit:contain; background:#000; display:block;">
+                    <div style="padding:5px 8px; font-size:10.5px; background:#f8fafc; color:#475569; border-top:1px solid #e2e8f0;">
+                      <b>Caption:</b> ${escapeHtml(it.caption || it.name)}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>` : ''}
+
+            <!-- Block 9: Sign-off Verification -->
+            <div class="report-section-block">
+              <h3 style="margin-top:14px;">Sign-off Verification</h3>
+              <table class="kv-table">
+                <tr><td>Prepared by</td><td>${escapeHtml(m.preparedby)} (SOC L1 Analyst)</td></tr>
+                <tr><td>Reviewed by</td><td>${escapeHtml(m.reviewedby)} (SOC L2 / Shift Lead)</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    }
 
             <!-- Block 4: Monitoring Log -->
             <div class="report-section-block">
@@ -5942,401 +5825,6 @@
         alert('Gagal export PDF: ' + e.message);
       } finally {
         if (btnEl) { btnEl.textContent = '📄 PDF Document'; btnEl.disabled = false; }
-      }
-    }
-
-    async function downloadDailyWord() {
-      const btnEl = document.getElementById('btnDownloadWord');
-      if (btnEl) { btnEl.textContent = '⏳ Menyiapkan Word...'; btnEl.disabled = true; }
-      showToast('Menyusun dokumen Word lengkap (.docx)...');
-
-      try {
-        const m = gatherDailyModel();
-        
-        // 1. Try docx Packer if window.docx is ready
-        if (window.docx && window.docx.Document && window.docx.Packer) {
-          try {
-            const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, HeadingLevel, ImageRun, AlignmentType, BorderStyle } = window.docx;
-
-            const tableBorder = {
-              top: { style: BorderStyle.SINGLE, size: 4, color: "CBD5E1" },
-              bottom: { style: BorderStyle.SINGLE, size: 4, color: "CBD5E1" },
-              left: { style: BorderStyle.SINGLE, size: 4, color: "CBD5E1" },
-              right: { style: BorderStyle.SINGLE, size: 4, color: "CBD5E1" }
-            };
-
-            const cell = (text, isHeader = false, widthPercent = 50, align = AlignmentType.LEFT) => new TableCell({
-              width: { size: widthPercent, type: WidthType.PERCENTAGE },
-              borders: tableBorder,
-              shading: isHeader ? { fill: "0E7490" } : undefined,
-              margins: { top: 70, bottom: 70, left: 100, right: 100 },
-              children: [new Paragraph({
-                alignment: align,
-                spacing: { before: 20, after: 20 },
-                children: [new TextRun({
-                  text: String(text || '-'),
-                  bold: isHeader,
-                  font: 'Calibri',
-                  size: isHeader ? 19 : 18,
-                  color: isHeader ? 'FFFFFF' : '1E293B'
-                })]
-              })]
-            });
-
-            const kvRow = (label, val) => new TableRow({
-              children: [
-                new TableCell({
-                  width: { size: 30, type: WidthType.PERCENTAGE },
-                  borders: tableBorder,
-                  shading: { fill: "F8FAFC" },
-                  margins: { top: 70, bottom: 70, left: 100, right: 100 },
-                  children: [new Paragraph({
-                    spacing: { before: 20, after: 20 },
-                    children: [new TextRun({ text: String(label || ''), bold: true, font: 'Calibri', size: 18, color: '334155' })]
-                  })]
-                }),
-                new TableCell({
-                  width: { size: 70, type: WidthType.PERCENTAGE },
-                  borders: tableBorder,
-                  margins: { top: 70, bottom: 70, left: 100, right: 100 },
-                  children: [new Paragraph({
-                    spacing: { before: 20, after: 20 },
-                    children: [new TextRun({ text: String(val || '-'), font: 'Calibri', size: 18, color: '1E293B' })]
-                  })]
-                })
-              ]
-            });
-
-            let docChildren = [];
-
-            // Add Cover Page if uploaded (Page 1)
-            const finalCoverBytes = coverImgBytes || dataUrlToUint8Array(coverImgData);
-            if (finalCoverBytes && ImageRun) {
-              try {
-                let cW = 480, cH = 680;
-                if (coverImgWidth && coverImgHeight) {
-                  const cRatio = coverImgWidth / coverImgHeight;
-                  if (cRatio > (480 / 680)) {
-                    cW = 480;
-                    cH = Math.round(480 / cRatio);
-                  } else {
-                    cH = 680;
-                    cW = Math.round(680 * cRatio);
-                  }
-                }
-                docChildren.push(new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  spacing: { before: 0, after: 0 },
-                  children: [
-                    new ImageRun({
-                      data: finalCoverBytes,
-                      transformation: { width: cW, height: cH }
-                    })
-                  ]
-                }));
-              } catch (coverErr) {
-                console.warn('docx cover ImageRun warning:', coverErr);
-              }
-            }
-
-            // Top Header Bar & Titles (Starts on Page 2 if Cover exists, otherwise Page 1)
-            docChildren.push(
-              new Paragraph({
-                text: "CONFIDENTIAL — SOC L1 OPERATIONAL SHIFT REPORT",
-                heading: HeadingLevel.HEADING_1,
-                pageBreakBefore: !!finalCoverBytes,
-                spacing: { before: 80, after: 60 }
-              }),
-              new Paragraph({
-                spacing: { before: 0, after: 120 },
-                children: [
-                  new TextRun({ text: `Customer: `, bold: true, color: '0E7490' }),
-                  new TextRun({ text: `${m.customer}  |  ` }),
-                  new TextRun({ text: `Date & Shift: `, bold: true, color: '0E7490' }),
-                  new TextRun({ text: `${m.date} (${m.shift})  |  ` }),
-                  new TextRun({ text: `SOC L1 Analyst: `, bold: true, color: '0E7490' }),
-                  new TextRun({ text: `${m.engineer}` })
-                ]
-              }),
-              
-              // 1. Document Control
-              new Paragraph({
-                text: "1. Document Control & Header",
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 140, after: 60 }
-              }),
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  kvRow("Customer / Project", m.customer),
-                  kvRow("Report Date & Shift", `${m.date} ${m.time} — ${m.shift} (${m.shifttime})`),
-                  kvRow("SOC L1 Engineer", m.engineer),
-                  kvRow("Location / Status", `${m.location} / ${m.reportstatus}`),
-                  kvRow("Reporting Period", m.period)
-                ]
-              }),
-              
-              // 2. Executive Summary
-              new Paragraph({
-                text: "2. Shift Narrative & Executive Summary",
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 160, after: 60 }
-              }),
-              new Paragraph({
-                spacing: { before: 0, after: 80 },
-                children: [new TextRun({ text: m.summary, font: 'Calibri', size: 19 })]
-              }),
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  kvRow("Overall Security Status", m.status.toUpperCase()),
-                  kvRow("Total Alerts Reviewed", String(m.reviewed)),
-                  kvRow("Total Alerts Escalated", `${m.escalated} (to ${m.escteam})`),
-                  kvRow("Total Shift Tasks", `${m.task} (Completed: ${m.taskdone})`)
-                ]
-              }),
-              
-              // 3. Alert Volume & Severity Distribution (Clean Page Break to Page 3)
-              new Paragraph({
-                text: "3. Alert Volume & Severity Distribution",
-                heading: HeadingLevel.HEADING_2,
-                pageBreakBefore: true,
-                spacing: { before: 80, after: 60 }
-              }),
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  new TableRow({ children: [cell("Severity Level", true, 34), cell("Distinct Rules", true, 33, AlignmentType.CENTER), cell("Total Events", true, 33, AlignmentType.RIGHT)] }),
-                  new TableRow({ children: [cell("Low", false, 34), cell(String(m.stats.bucket.Low.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Low.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
-                  new TableRow({ children: [cell("Medium", false, 34), cell(String(m.stats.bucket.Medium.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Medium.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
-                  new TableRow({ children: [cell("High", false, 34), cell(String(m.stats.bucket.High.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.High.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] }),
-                  new TableRow({ children: [cell("Critical", false, 34), cell(String(m.stats.bucket.Critical.rules), false, 33, AlignmentType.CENTER), cell(m.stats.bucket.Critical.events.toLocaleString(), false, 33, AlignmentType.RIGHT)] })
-                ]
-              })
-            );
-
-            // Top Triggered Rules
-            if (m.stats.topRules && m.stats.topRules.length > 0) {
-              docChildren.push(
-                new Paragraph({
-                  text: "Top Triggered Rules by Event Volume",
-                  heading: HeadingLevel.HEADING_3,
-                  spacing: { before: 140, after: 60 }
-                }),
-                new Table({
-                  width: { size: 100, type: WidthType.PERCENTAGE },
-                  rows: [
-                    new TableRow({ children: [cell("No", true, 8, AlignmentType.CENTER), cell("Rule ID", true, 20), cell("Description", true, 44), cell("Level", true, 12, AlignmentType.CENTER), cell("Count", true, 16, AlignmentType.RIGHT)] }),
-                    ...m.stats.topRules.map((r, i) => new TableRow({
-                      children: [
-                        cell(String(i + 1), false, 8, AlignmentType.CENTER),
-                        cell(r.rule, true, 20),
-                        cell(r.desc, false, 44),
-                        cell(r.level, false, 12, AlignmentType.CENTER),
-                        cell(r.events.toLocaleString(), false, 16, AlignmentType.RIGHT)
-                      ]
-                    }))
-                  ]
-                })
-              );
-            }
-
-            // 4. Monitoring Log
-            docChildren.push(
-              new Paragraph({
-                text: "4. Monitoring & Alert Review Log",
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 160, after: 60 }
-              })
-            );
-            if (monRows && monRows.length > 0) {
-              docChildren.push(
-                new Table({
-                  width: { size: 100, type: WidthType.PERCENTAGE },
-                  rows: [
-                    new TableRow({ children: [cell("Time", true, 15), cell("Rule ID", true, 20), cell("Description", true, 25), cell("Action Taken", true, 22), cell("Result", true, 18)] }),
-                    ...monRows.map(r => new TableRow({
-                      children: [cell(r.time, false, 15), cell(r.rule, true, 20), cell(r.desc, false, 25), cell(r.action, false, 22), cell(r.result, false, 18)]
-                    }))
-                  ]
-                })
-              );
-            } else {
-              docChildren.push(new Paragraph({ text: "Routine security monitoring maintained. Zero high-severity alerts required manual escalation.", spacing: { before: 20, after: 80 } }));
-            }
-
-            // 5. Shift Tasks
-            docChildren.push(
-              new Paragraph({
-                text: "5. Shift Tasks & Operational Activities",
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 160, after: 60 }
-              })
-            );
-            if (taskRows && taskRows.length > 0) {
-              docChildren.push(
-                new Table({
-                  width: { size: 100, type: WidthType.PERCENTAGE },
-                  rows: [
-                    new TableRow({ children: [cell("Task Description", true, 45), cell("Status", true, 20), cell("Notes", true, 35)] }),
-                    ...taskRows.map(r => new TableRow({
-                      children: [cell(r.task, false, 45), cell(r.status, true, 20), cell(r.notes, false, 35)]
-                    }))
-                  ]
-                })
-              );
-            } else {
-              docChildren.push(new Paragraph({ text: "Scheduled operational tasks completed.", spacing: { before: 20, after: 80 } }));
-            }
-
-            // 6. Incidents (if any)
-            if (incRows && incRows.length > 0) {
-              docChildren.push(
-                new Paragraph({
-                  text: "6. Incidents & Escalations",
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 160, after: 60 }
-                }),
-                new Table({
-                  width: { size: 100, type: WidthType.PERCENTAGE },
-                  rows: [
-                    new TableRow({ children: [cell("Time", true, 15), cell("Incident", true, 35), cell("Severity", true, 20), cell("Action / Escalation", true, 30)] }),
-                    ...incRows.map(r => new TableRow({
-                      children: [cell(r.time, false, 15), cell(r.incident, true, 35), cell(r.severity, false, 20), cell(r.action, false, 30)]
-                    }))
-                  ]
-                })
-              );
-            }
-
-            // 7. Issues & Recommendations
-            docChildren.push(
-              new Paragraph({
-                text: `${incRows.length ? '7' : '6'}. Issues, Recommendations & Notes`,
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 160, after: 60 }
-              }),
-              new Paragraph({
-                spacing: { before: 40, after: 20 },
-                children: [new TextRun({ text: "Issues & Constraints:", bold: true })]
-              }),
-              ...m.issues.split('\n').filter(Boolean).map(x => new Paragraph({ text: `• ${x}`, spacing: { before: 20, after: 20 } })),
-              new Paragraph({
-                spacing: { before: 60, after: 20 },
-                children: [new TextRun({ text: "Tuning Recommendations:", bold: true })]
-              }),
-              ...m.reco.split('\n').filter(Boolean).map(x => new Paragraph({ text: `• ${x}`, spacing: { before: 20, after: 20 } }))
-            );
-
-            // 8. Evidence & Screenshots (Clean, Centered, Proportional Dimensions)
-            if (evidenceItems && evidenceItems.length > 0) {
-              docChildren.push(
-                new Paragraph({
-                  text: `${incRows.length ? '8' : '7'}. Evidence & Screenshots`,
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 180, after: 100 }
-                })
-              );
-
-              for (let item of evidenceItems) {
-                const itemBytes = item.bytes || dataUrlToUint8Array(item.dataUrl);
-                if (itemBytes && ImageRun) {
-                  try {
-                    const maxW = 460;
-                    const maxH = 240;
-                    const ratio = (item.width || 800) / (item.height || 600);
-                    let targetW = maxW;
-                    let targetH = Math.round(maxW / ratio);
-                    if (targetH > maxH) {
-                      targetH = maxH;
-                      targetW = Math.round(maxH * ratio);
-                    }
-
-                    docChildren.push(
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: 80, after: 30 },
-                        children: [
-                          new ImageRun({
-                            data: itemBytes,
-                            transformation: { width: targetW, height: targetH }
-                          })
-                        ]
-                      }),
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { before: 0, after: 120 },
-                        children: [
-                          new TextRun({ text: `Caption: ${item.caption || item.name}`, italics: true, size: 18, color: '64748B' })
-                        ]
-                      })
-                    );
-                  } catch (evImgErr) {
-                    console.warn('Evidence ImageRun error:', evImgErr);
-                  }
-                }
-              }
-            }
-
-            // 9. Sign-off Verification
-            docChildren.push(
-              new Paragraph({
-                text: "Sign-off Verification",
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 180, after: 60 }
-              }),
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  kvRow("Prepared by", `${m.preparedby} (SOC L1 Analyst)`),
-                  kvRow("Reviewed by", `${m.reviewedby} (SOC L2 / Shift Lead)`)
-                ]
-              }),
-              new Paragraph({
-                alignment: AlignmentType.CENTER,
-                spacing: { before: 140, after: 40 },
-                children: [
-                  new TextRun({ text: `CONFIDENTIAL | Generated: ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' })}`, size: 16, color: '64748B' })
-                ]
-              })
-            );
-
-            const doc = new Document({
-              sections: [{
-                properties: {
-                  page: {
-                    size: { width: 11906, height: 16838 }, // A4
-                    margin: { top: 720, bottom: 720, left: 720, right: 720 } // 0.5" Margins
-                  }
-                },
-                children: docChildren
-              }]
-            });
-
-            const blob = await Packer.toBlob(doc);
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${m.filename}.docx`;
-            a.click();
-            showToast(`Word (.docx) lengkap rapi tersimpan: ${m.filename}.docx`);
-            return;
-          } catch (packErr) {
-            console.warn('docx Packer fallback to Word Document XML:', packErr);
-          }
-        }
-
-        // 2. Universal Native Office Word Generator (works on GitHub Pages & offline)
-        const wordBlob = generateWordDocumentBlob(m);
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(wordBlob);
-        a.download = `${m.filename}.doc`;
-        a.click();
-        showToast(`Dokumen Word tersimpan: ${m.filename}.doc`);
-      } catch (e) {
-        console.error('Word error:', e);
-        alert('Gagal export Word: ' + e.message);
-      } finally {
-        if (btnEl) { btnEl.textContent = '📝 Word (.docx)'; btnEl.disabled = false; }
       }
     }
 
