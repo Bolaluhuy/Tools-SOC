@@ -1794,6 +1794,173 @@
       width: 100%;
       text-align: center;
     }
+
+    /* ==========================================================================
+       MODALS, DRAWERS & FLOATING UTILITIES (CMD PALETTE, SCRATCHPAD, TOASTS)
+       ========================================================================== */
+    .cmd-palette-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 8, 16, 0.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 9999;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 12vh 20px 20px;
+    }
+
+    .cmd-palette-backdrop.active {
+      display: flex;
+    }
+
+    .cmd-palette-modal {
+      background: #0b0f19;
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 580px;
+      overflow: hidden;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 242, 254, 0.2);
+    }
+
+    .cmd-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(16, 22, 38, 0.6);
+    }
+
+    .cmd-input-wrap svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--primary);
+      flex-shrink: 0;
+    }
+
+    .cmd-input-wrap input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 14px;
+      width: 100%;
+      font-family: var(--font-sans);
+    }
+
+    .cmd-results {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .cmd-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: var(--transition-fast);
+      color: var(--text-muted);
+    }
+
+    .cmd-option svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--text-dim);
+      flex-shrink: 0;
+    }
+
+    .cmd-option:hover,
+    .cmd-option.focused {
+      background: var(--primary-dim);
+      color: var(--text-main);
+    }
+
+    .cmd-option:hover svg,
+    .cmd-option.focused svg {
+      stroke: var(--primary);
+    }
+
+    .cmd-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 18px;
+      background: rgba(0, 0, 0, 0.35);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    /* Scratchpad Drawer */
+    .scratchpad-drawer {
+      position: fixed;
+      top: 64px;
+      right: -420px;
+      width: 400px;
+      height: calc(100vh - 64px);
+      background: rgba(11, 15, 25, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-left: 1px solid var(--border-card);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      z-index: 900;
+      transition: right var(--transition-smooth);
+    }
+
+    .scratchpad-drawer.open {
+      right: 0;
+    }
+
+    /* Toast Notification Center */
+    .toast-center {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(14, 20, 36, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius-md);
+      padding: 10px 18px;
+      color: var(--text-main);
+      font-size: 12.5px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      animation: slideToast 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideToast {
+      from {
+        transform: translateX(40px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
   </style>
 </head>
 
@@ -4199,51 +4366,56 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, `Shift_${monthVal}`);
       XLSX.writeFile(wb, `Jadwal_Shift_SOC_${monthVal}.xlsx`);
-      /* ==========================================================================
-         PRESENSI & ABSENSI SHIFT SOC PORTAL LOGIC
-         ========================================================================== */
-      let attendanceRecords = [];
+    }
+
+    /* ==========================================================================
+       PRESENSI & ABSENSI SHIFT SOC PORTAL LOGIC
+       ========================================================================== */
+    let attendanceRecords = [];
+    try {
+      const savedAtt = localStorage.getItem('nexus_attendance_records');
+      if (savedAtt) attendanceRecords = JSON.parse(savedAtt);
+    } catch (e) { attendanceRecords = []; }
+
+    let webcamStream = null;
+    let currentPhotoDataUrl = null;
+
+    async function startWebcam() {
+      const video = document.getElementById('webcamVideo');
+      const placeholder = document.getElementById('cameraPlaceholder');
+      const previewImg = document.getElementById('snapPreviewImg');
+      const reticle = document.getElementById('viewfinderReticle');
+      const btnStart = document.getElementById('btnStartCamera');
+      const btnCapture = document.getElementById('btnCapturePhoto');
+
       try {
-        const savedAtt = localStorage.getItem('nexus_attendance_records');
-        if (savedAtt) attendanceRecords = JSON.parse(savedAtt);
-      } catch (e) { attendanceRecords = []; }
-
-      let webcamStream = null;
-      let currentPhotoDataUrl = null;
-
-      async function startWebcam() {
-        const video = document.getElementById('webcamVideo');
-        const placeholder = document.getElementById('cameraPlaceholder');
-        const previewImg = document.getElementById('snapPreviewImg');
-        const reticle = document.getElementById('viewfinderReticle');
-        const btnStart = document.getElementById('btnStartCamera');
-        const btnCapture = document.getElementById('btnCapturePhoto');
-
-        try {
-          if (webcamStream) {
-            stopWebcam();
-            return;
-          }
-
-          webcamStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-            audio: false
-          });
-
-          video.srcObject = webcamStream;
-          video.style.display = 'block';
-          placeholder.style.display = 'none';
-          previewImg.style.display = 'none';
-          reticle.style.display = 'block';
-          btnStart.textContent = '⏹️ Matikan Kamera';
-          btnStart.classList.replace('btn-secondary', 'btn-danger');
-          btnCapture.style.display = 'inline-flex';
-          showToast('Kamera webcam aktif');
-          playBeep(900, 'sine', 0.05);
-        } catch (err) {
-          console.warn('Webcam error:', err);
-          alert('Tidak dapat mengakses webcam (' + err.message + '). Anda tetap dapat menggunakan tombol "Upload" untuk mengunggah foto selfie.');
+        if (webcamStream) {
+          stopWebcam();
+          return;
         }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Akses kamera langsung dibatasi oleh browser. Gunakan tombol "📁 Upload" untuk memilih foto selfie.');
+        }
+
+        webcamStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+          audio: false
+        });
+
+        video.srcObject = webcamStream;
+        video.style.display = 'block';
+        placeholder.style.display = 'none';
+        previewImg.style.display = 'none';
+        reticle.style.display = 'block';
+        btnStart.textContent = '⏹️ Matikan Kamera';
+        btnStart.classList.replace('btn-secondary', 'btn-danger');
+        btnCapture.style.display = 'inline-flex';
+        showToast('Kamera webcam aktif');
+        playBeep(900, 'sine', 0.05);
+      } catch (err) {
+        console.warn('Webcam error:', err);
+        alert('Tidak dapat mengakses webcam (' + err.message + ').\n\nTips: Jika membuka file secara lokal (file://), Anda dapat menggunakan tombol "📁 Upload" di samping tombol kamera untuk mengunggah foto selfie.');
       }
     }
 
@@ -4392,11 +4564,18 @@
       const photo = currentPhotoDataUrl || createPlaceholderAvatar(eng, shift, eventType);
 
       // Create crypto verification hash
-      const hashStr = `${eng}|${shift}|${eventType}|${timestampIso}|${loc}`;
-      const msgBuffer = new TextEncoder().encode(hashStr);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+      let hashHex = Math.random().toString(16).slice(2, 10);
+      try {
+        if (window.crypto && window.crypto.subtle) {
+          const hashStr = `${eng}|${shift}|${eventType}|${timestampIso}|${loc}`;
+          const msgBuffer = new TextEncoder().encode(hashStr);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+        }
+      } catch (err) {
+        console.warn('Crypto subtle fallback:', err);
+      }
 
       const record = {
         id: Date.now().toString(),
