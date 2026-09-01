@@ -79,6 +79,30 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
     mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 90%);
   }
 
+  /* HUD scanline sweeping down the whole viewport — classic "cyber terminal" feel */
+  .scan-overlay{
+    position:fixed; inset:0; z-index:2; pointer-events:none; mix-blend-mode:screen; opacity:.5;
+  }
+  .scan-overlay::before{
+    content:''; position:absolute; left:0; right:0; height:140px; top:-140px;
+    background:linear-gradient(180deg, transparent, rgba(61,220,240,.10) 45%, rgba(61,220,240,.22) 50%, rgba(61,220,240,.10) 55%, transparent);
+    animation:scanDown 7s linear infinite;
+  }
+  @keyframes scanDown{ 0%{ transform:translateY(0); } 100%{ transform:translateY(calc(100vh + 140px)); } }
+
+  .status-badge{
+    display:flex; align-items:center; gap:8px; padding:6px 13px; border-radius:20px;
+    background:rgba(63,185,80,.08); border:1px solid rgba(63,185,80,.35); color:var(--low);
+    font-size:11px; font-weight:700; letter-spacing:.6px; font-family:'JetBrains Mono',Consolas,monospace;
+  }
+  .status-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--low);
+    box-shadow:0 0 8px 2px rgba(63,185,80,.7);
+    animation:statusBlink 1.8s ease-in-out infinite;
+  }
+  @keyframes statusBlink{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+  .status-clock{ color:var(--muted); font-weight:600; letter-spacing:.3px; margin-left:2px; }
+
   header, nav, main{position:relative; z-index:1;}
 
   header{
@@ -124,6 +148,12 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
   }
   nav button.active{animation:popIn .35s var(--ease);}
   @keyframes popIn{ from{ transform:scale(.92); } to{ transform:scale(1); } }
+  nav button.active::after{
+    content:''; position:absolute; left:10%; right:10%; bottom:-7px; height:2px;
+    background:linear-gradient(90deg,transparent,var(--gold-light),transparent);
+    filter:blur(.3px); animation:navGlow 1.8s ease-in-out infinite;
+  }
+  @keyframes navGlow{ 0%,100%{ opacity:.4; } 50%{ opacity:1; } }
 
   main{padding:28px 28px 70px; max-width:1180px; margin:0 auto;}
   main.wide{max-width:1320px;}
@@ -133,6 +163,7 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
   @keyframes fadeUp{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
 
   .card{
+    position:relative;
     background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
     padding:22px; margin-bottom:18px; backdrop-filter:blur(10px);
     box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 20px 40px -28px rgba(0,0,0,.7);
@@ -140,6 +171,14 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
     animation:fadeUp .5s var(--ease) both;
   }
   .card:hover{border-color:rgba(201,162,39,.35); transform:translateY(-2px); box-shadow:0 24px 48px -24px rgba(0,0,0,.8);}
+  /* HUD corner brackets — subtle, light up on hover for that "targeting reticle" cyber feel */
+  .card::before, .card::after{
+    content:''; position:absolute; width:16px; height:16px; opacity:0; transition:opacity .25s var(--ease);
+    border-color:var(--gold-light); pointer-events:none;
+  }
+  .card::before{ top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; border-top-left-radius:6px; }
+  .card::after{ bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; border-bottom-right-radius:6px; }
+  .card:hover::before, .card:hover::after{ opacity:.7; }
   main .card:nth-of-type(1){animation-delay:.02s;}
   main .card:nth-of-type(2){animation-delay:.08s;}
   main .card:nth-of-type(3){animation-delay:.14s;}
@@ -296,11 +335,69 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
   .dyn-table input, .dyn-table select{padding:7px 9px; font-size:12px;}
   .dyn-table td{padding:5px;}
   .add-row-btn{margin-top:8px;}
+
+  /* ===================== GLOBAL THREAT MAP (IOC Lookup) ===================== */
+  .threat-map{
+    position:relative; width:100%; aspect-ratio:2/1; border-radius:12px; overflow:hidden;
+    background:radial-gradient(ellipse at 50% 45%, rgba(61,220,240,.09), transparent 68%), #060911;
+    border:1px solid var(--border); box-shadow:inset 0 0 70px rgba(0,0,0,.55);
+  }
+  @media(max-width:720px){ .threat-map{ aspect-ratio:4/5; } }
+  .threat-map-rings{
+    position:absolute; inset:0; pointer-events:none;
+    background-image:repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 13.9%, rgba(61,220,240,.07) 14%);
+  }
+  .threat-map-sweep{
+    position:absolute; inset:-60%; pointer-events:none; mix-blend-mode:screen;
+    background:conic-gradient(from 0deg, transparent 0deg, rgba(61,220,240,.20) 16deg, transparent 42deg);
+    animation:sweepRotate 5s linear infinite;
+  }
+  @keyframes sweepRotate{ to{ transform:rotate(360deg); } }
+  .threat-map-dots, .threat-map-arc{ position:absolute; inset:0; width:100%; height:100%; }
+  .threat-map-arc{ pointer-events:none; }
+  .threat-map-dots circle{ fill:rgba(139,124,246,.5); }
+  .threat-arc-path{
+    stroke:var(--cyan); stroke-width:1.6; fill:none; stroke-dasharray:6 5;
+    filter:drop-shadow(0 0 4px var(--cyan)); animation:dashFlow 1s linear infinite;
+  }
+  @keyframes dashFlow{ to{ stroke-dashoffset:-22; } }
+  .threat-packet{ fill:var(--gold-light); filter:drop-shadow(0 0 6px var(--gold-light)); }
+
+  .threat-map-markers{ position:absolute; inset:0; }
+  .map-marker{ position:absolute; transform:translate(-50%,-50%); }
+  .map-marker .dot{
+    display:block; width:9px; height:9px; border-radius:50%; background:var(--cyan);
+    box-shadow:0 0 8px 2px var(--cyan); position:relative; z-index:2;
+  }
+  .map-marker.hq .dot{ background:var(--gold-light); box-shadow:0 0 10px 3px var(--gold-light); width:11px; height:11px; }
+  .map-marker.target .dot{ background:var(--crit); box-shadow:0 0 10px 3px var(--crit); }
+  .map-marker .ping{
+    position:absolute; left:50%; top:50%; width:9px; height:9px; margin:-4.5px 0 0 -4.5px;
+    border-radius:50%; background:rgba(248,81,73,.55); animation:pingRing 1.6s ease-out infinite;
+  }
+  .map-marker.hq .ping{ background:rgba(240,207,92,.5); animation-duration:2.4s; }
+  @keyframes pingRing{ 0%{ transform:scale(1); opacity:.85; } 100%{ transform:scale(6.5); opacity:0; } }
+  .map-tooltip{
+    position:absolute; bottom:calc(100% + 9px); left:50%; transform:translateX(-50%);
+    background:#12172a; border:1px solid var(--border); padding:5px 10px; border-radius:8px;
+    font-size:11px; line-height:1.4; white-space:nowrap; color:var(--text); opacity:0; pointer-events:none;
+    transition:opacity .2s var(--ease); box-shadow:0 8px 20px -6px rgba(0,0,0,.6); z-index:3;
+  }
+  .map-marker:hover .map-tooltip, .map-marker.target .map-tooltip, .map-marker.hq .map-tooltip{ opacity:1; }
+  .threat-map-status{
+    display:flex; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:var(--muted);
+    font-family:'JetBrains Mono',Consolas,monospace;
+  }
+  .threat-map-status .status-dot{ width:6px; height:6px; }
+  .threat-legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:11px; color:var(--muted);}
+  .threat-legend span{display:inline-flex; align-items:center; gap:6px;}
+  .threat-legend i{width:8px; height:8px; border-radius:50%; display:inline-block;}
 </style>
 </head>
 <body>
 <div class="bg-fx"><span></span><span></span><span></span></div>
 <div class="bg-grid"></div>
+<div class="scan-overlay"></div>
 
 <header>
   <div class="brand">
@@ -310,7 +407,10 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
       <p>IOC Lookup &middot; Case Report Formatter &middot; Daily Report Builder &middot; Image → PDF</p>
     </div>
   </div>
-  <div class="muted" style="font-size:11.5px;">Semua proses berjalan di browser kamu — tidak ada data yang dikirim ke server manapun selain API yang kamu panggil sendiri.</div>
+  <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+    <div class="status-badge"><span class="status-dot"></span>SYSTEM ONLINE <span id="hdrClock" class="status-clock"></span></div>
+    <div class="muted" style="font-size:11.5px;">Semua proses berjalan di browser kamu — tidak ada data yang dikirim ke server manapun selain API yang kamu panggil sendiri.</div>
+  </div>
 </header>
 
 <nav>
@@ -340,6 +440,29 @@ Actual: `+E.attribValue);else{var O=E.tag,L=E.tags[E.tags.length-1]||E;O.ns===L.
       <span id="copyIocMsg" class="muted"></span>
     </div>
     <div class="footer-note">Kenapa gak otomatis semua? VirusTotal & AbuseIPDB API memang didesain hanya untuk dipanggil dari server, bukan dari browser (mereka tidak pernah mengizinkan CORS) — jadi pivot-link ke tab baru tetap cara paling reliable dari tool berbasis file HTML seperti ini.</div>
+  </div>
+
+  <div class="card">
+    <h2>🗺️ Global Threat Map</h2>
+    <div class="sub">Visualisasi posisi IP yang kamu cek relatif terhadap SOC HQ. Radar tetap berjalan sebagai indikator monitoring — begitu kamu cek sebuah IP publik, titik targetnya otomatis muncul & tersambung dari HQ.</div>
+    <div id="threatMap" class="threat-map">
+      <div class="threat-map-sweep"></div>
+      <div class="threat-map-rings"></div>
+      <svg id="threatMapDots" class="threat-map-dots" viewBox="0 0 1000 500" preserveAspectRatio="none"></svg>
+      <svg id="threatMapArc" class="threat-map-arc" viewBox="0 0 1000 500" preserveAspectRatio="none"></svg>
+      <div id="threatMapMarkers" class="threat-map-markers">
+        <div class="map-marker hq" style="left:79.7%; top:53.4%;">
+          <span class="ping"></span><span class="dot"></span>
+          <div class="map-tooltip">🏠 SOC HQ</div>
+        </div>
+      </div>
+    </div>
+    <div id="threatMapStatus" class="threat-map-status"><span class="status-dot"></span>Menunggu target — cek sebuah IP publik di atas untuk memetakannya.</div>
+    <div class="threat-legend">
+      <span><i style="background:var(--gold-light);"></i>SOC HQ</span>
+      <span><i style="background:var(--crit);"></i>Target IOC</span>
+      <span><i style="background:var(--cyan);"></i>Jalur / paket data</span>
+    </div>
   </div>
 </section>
 
@@ -692,6 +815,92 @@ window.addEventListener('dragover', e=>{ e.preventDefault(); });
 window.addEventListener('drop', e=>{ e.preventDefault(); });
 
 /* ============ TAB 1: IOC LOOKUP ============ */
+/* ---- Global Threat Map (dot-matrix world + HQ→target arc) ---- */
+const MAP_HQ = { lat:-6.2, lon:106.8 }; // SOC HQ (Jakarta area)
+function latLonToPct(lat, lon){
+  return { xPct: (lon+180)/360*100, yPct: (90-lat)/180*100 };
+}
+function buildThreatMapDots(){
+  const svg = document.getElementById('threatMapDots');
+  if(!svg || svg.dataset.built) return;
+  // stylized continent silhouettes as ellipse approximations (not pixel-accurate coastlines —
+  // this is the same "dot matrix world" style used by most cyber threat-map dashboards)
+  const continents = [
+    {cx:230,cy:140,rx:140,ry:105}, // North America
+    {cx:330,cy:60, rx:35, ry:24 }, // Greenland
+    {cx:250,cy:225,rx:28, ry:38 }, // Central America
+    {cx:290,cy:330,rx:68, ry:118}, // South America
+    {cx:505,cy:112,rx:52, ry:42 }, // Europe
+    {cx:520,cy:275,rx:72, ry:128}, // Africa
+    {cx:580,cy:168,rx:38, ry:32 }, // Middle East
+    {cx:715,cy:145,rx:175,ry:105}, // Asia
+    {cx:645,cy:78, rx:145,ry:38 }, // Russia (north band)
+    {cx:648,cy:212,rx:42, ry:48 }, // India
+    {cx:762,cy:228,rx:55, ry:38 }, // SE Asia
+    {cx:828,cy:358,rx:66, ry:42 }, // Australia
+  ];
+  const step = 13;
+  let out = '';
+  for(let y=10; y<500; y+=step){
+    for(let x=10; x<1000; x+=step){
+      for(const c of continents){
+        const dx=(x-c.cx)/c.rx, dy=(y-c.cy)/c.ry;
+        if(dx*dx+dy*dy<=1){
+          const jitter = (Math.random()*0.6+0.45).toFixed(2);
+          out += `<circle cx="${x}" cy="${y}" r="${1.35*jitter}"/>`;
+          break;
+        }
+      }
+    }
+  }
+  svg.innerHTML = out;
+  svg.dataset.built = '1';
+}
+function updateThreatMapTarget(lat, lon, meta){
+  const arcSvg = document.getElementById('threatMapArc');
+  const statusEl = document.getElementById('threatMapStatus');
+  if(!arcSvg || !statusEl) return;
+  const oldTarget = document.getElementById('mapTargetMarker');
+  if(oldTarget) oldTarget.remove();
+  arcSvg.innerHTML = '';
+
+  if(lat==null || lon==null || isNaN(lat) || isNaN(lon)){
+    statusEl.innerHTML = '<span class="status-dot"></span>Menunggu target — cek sebuah IP publik di atas untuk memetakannya.';
+    return;
+  }
+  const hq = latLonToPct(MAP_HQ.lat, MAP_HQ.lon);
+  const tgt = latLonToPct(lat, lon);
+  const x1=hq.xPct*10, y1=hq.yPct*5, x2=tgt.xPct*10, y2=tgt.yPct*5;
+  const mx=(x1+x2)/2, my=Math.min(y1,y2)-70;
+  const pathD = `M${x1.toFixed(1)},${y1.toFixed(1)} Q${mx.toFixed(1)},${my.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+  arcSvg.innerHTML = `<path d="${pathD}" class="threat-arc-path"/>
+    <circle r="4" class="threat-packet"><animateMotion dur="1.8s" repeatCount="indefinite" path="${pathD}"/></circle>`;
+
+  const marker = document.createElement('div');
+  marker.id = 'mapTargetMarker';
+  marker.className = 'map-marker target';
+  marker.style.left = tgt.xPct+'%';
+  marker.style.top = tgt.yPct+'%';
+  const locLabel = [meta.city, meta.country].filter(Boolean).join(', ') || 'Lokasi tidak diketahui';
+  marker.innerHTML = `<span class="ping"></span><span class="dot"></span>
+    <div class="map-tooltip"><b>${meta.ip||''}</b><br>${locLabel}</div>`;
+  document.getElementById('threatMapMarkers').appendChild(marker);
+  statusEl.innerHTML = `<span class="status-dot" style="background:var(--crit); box-shadow:0 0 8px 2px rgba(248,81,73,.7);"></span>Target terkunci: <b style="color:var(--text);">${meta.ip}</b> — ${locLabel}`;
+}
+document.addEventListener('DOMContentLoaded', buildThreatMapDots);
+
+/* live clock in header status badge */
+function tickHdrClock(){
+  const el = document.getElementById('hdrClock');
+  if(!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  el.textContent = `· ${hh}:${mm}:${ss}`;
+}
+document.addEventListener('DOMContentLoaded', ()=>{ tickHdrClock(); setInterval(tickHdrClock, 1000); });
+
 function detectIocType(v){
   v = v.trim();
   if(/^(\d{1,3}\.){3}\d{1,3}$/.test(v)) return 'ip';
@@ -722,9 +931,18 @@ async function doIocLookup(){
           <div class="geo-item"><div class="k">Timezone</div><div class="v">${d.timezone||'-'}</div></div>
           <div class="geo-item"><div class="k">Koordinat</div><div class="v">${d.latitude||'-'}, ${d.longitude||'-'}</div></div>
         </div>`;
+      const lat = parseFloat(d.latitude), lon = parseFloat(d.longitude);
+      if(!isNaN(lat) && !isNaN(lon)){
+        updateThreatMapTarget(lat, lon, { ip: val, city: d.city, country: d.country_name });
+      } else {
+        updateThreatMapTarget(null, null, {});
+      }
     }catch(e){
       document.getElementById('geoResult').innerHTML = '<div class="muted">Gagal ambil data geo otomatis ('+e.message+'). Pakai link pivot di bawah untuk cek manual.</div>';
+      updateThreatMapTarget(null, null, {});
     }
+  } else {
+    updateThreatMapTarget(null, null, {});
   }
 
   const q = encodeURIComponent(val);
