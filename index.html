@@ -2818,11 +2818,13 @@
                   <div class="checkline"><input type="checkbox" id="d_useuniquerules"
                       onchange="applyAutoReviewed()"><label style="margin:0;">Gunakan total unique rules dari file
                       export</label></div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px;">
-                    <div><label class="cyber-label">Escalated to L2 / Relevant Team</label><input type="text"
+                  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:10px;">
+                    <div><label class="cyber-label">Escalated to L2 / Team</label><input type="text"
                         class="cyber-input mono" id="d_escteam" value="0"></div>
                     <div><label class="cyber-label">Total Tasks</label><input type="text" class="cyber-input mono"
-                        id="d_task" value="0"></div>
+                        id="d_task" value="3"></div>
+                    <div><label class="cyber-label">Tasks Done</label><input type="text" class="cyber-input mono"
+                        id="d_taskdone" value="3"></div>
                   </div>
                   <div class="checkline"><input type="checkbox" id="d_counttasks"><label style="margin:0;">Hitung
                       otomatis dari tabel section 06</label></div>
@@ -4762,8 +4764,9 @@
       }
       showToast('Menyiapkan PDF Rekap Presensi...');
       try {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+        const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (!jsPDFClass) throw new Error('Library jsPDF belum terload.');
+        const pdf = new jsPDFClass({ unit: 'pt', format: 'a4' });
 
         pdf.setFontSize(16);
         pdf.setTextColor(15, 23, 42);
@@ -5166,10 +5169,13 @@
 
     /* Build Report HTML & PDF/Word Generator */
     function gatherDailyModel() {
-      const g = id => document.getElementById(id).value;
+      const g = id => {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
+      };
       const customer = g('d_customer') || 'Heritage Minerals';
-      const date = g('d_date') || '13 August 2026';
-      const time = g('d_time') || '15:00';
+      const date = g('d_date') || new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+      const time = g('d_time') || new Date().toTimeString().slice(0, 5);
       const shift = g('d_shift') || 'Shift 2';
       const filename = g('d_filename') || `${customer.replace(/\s+/g, '_')}_${shift}_${date.replace(/\s+/g, '')}`;
 
@@ -5189,7 +5195,10 @@
       };
 
       return {
-        customer, date, time, shift,
+        customer,
+        date,
+        time,
+        shift,
         shifttime: g('d_shifttime') || '15:00 - 23:00',
         engineer: g('d_engineer') || 'Bilal',
         location: g('d_location') || 'Onsite',
@@ -5200,8 +5209,8 @@
         reviewed: g('d_reviewed') || (dailyStats ? dailyStats.totalEvents : '245'),
         escalated: g('d_escalated') || '0',
         escteam: g('d_escteam') || '0',
-        task: g('d_task') || (taskRows.length || '3'),
-        taskdone: g('d_taskdone') || '3',
+        task: g('d_task') || (taskRows.length ? String(taskRows.length) : '3'),
+        taskdone: g('d_taskdone') || (taskRows.filter(t => t.status === 'Completed').length ? String(taskRows.filter(t => t.status === 'Completed').length) : '3'),
         issues: g('d_issues') || 'No significant operational issues observed during the shift.',
         reco: g('d_reco') || 'Continue 24/7 security monitoring and review top rule baselines.',
         preparedby: g('d_preparedby') || 'Bilal',
@@ -5297,27 +5306,39 @@
     }
 
     function previewDailyReport() {
-      const m = gatherDailyModel();
-      document.getElementById('dailyReportPreview').innerHTML = buildDailyReportHtml(m);
-      document.getElementById('dailyPreviewOutputCard').style.display = 'block';
-      document.getElementById('dailyPreviewOutputCard').scrollIntoView({ behavior: 'smooth' });
-      showToast('Pratinjau laporan berhasil ditampilkan');
+      try {
+        const m = gatherDailyModel();
+        document.getElementById('dailyReportPreview').innerHTML = buildDailyReportHtml(m);
+        document.getElementById('dailyPreviewOutputCard').style.display = 'block';
+        document.getElementById('dailyPreviewOutputCard').scrollIntoView({ behavior: 'smooth' });
+        showToast('Pratinjau laporan berhasil ditampilkan');
+      } catch (err) {
+        console.error('Preview error:', err);
+        alert('Gagal menampilkan preview: ' + err.message);
+      }
     }
 
     async function downloadDailyPdf() {
-      const m = gatherDailyModel();
-      document.getElementById('dailyReportPreview').innerHTML = buildDailyReportHtml(m);
-      document.getElementById('dailyPreviewOutputCard').style.display = 'block';
-      const src = document.getElementById('dailyPrintArea');
-      if (!src) return;
-
       const btnEl = document.getElementById('btnDownloadPdf');
       if (btnEl) { btnEl.textContent = '⏳ Menyiapkan PDF...'; btnEl.disabled = true; }
 
       showToast('Menyiapkan dokumen PDF...');
       try {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+        const m = gatherDailyModel();
+        document.getElementById('dailyReportPreview').innerHTML = buildDailyReportHtml(m);
+        document.getElementById('dailyPreviewOutputCard').style.display = 'block';
+        const src = document.getElementById('dailyPrintArea');
+        if (!src) throw new Error('Area dokumen cetak tidak ditemukan.');
+
+        const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        if (!jsPDFClass) {
+          throw new Error('Modul jsPDF belum siap. Pastikan koneksi internet aktif untuk memuat library jsPDF.');
+        }
+        if (!window.html2canvas) {
+          throw new Error('Modul html2canvas belum siap. Pastikan koneksi internet aktif untuk memuat library html2canvas.');
+        }
+
+        const pdf = new jsPDFClass({ unit: 'pt', format: 'a4' });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
 
@@ -5343,7 +5364,7 @@
         pdf.save(`${m.filename}.pdf`);
         showToast(`PDF tersimpan: ${m.filename}.pdf`);
       } catch (e) {
-        console.error(e);
+        console.error('PDF error:', e);
         alert('Gagal export PDF: ' + e.message);
       } finally {
         if (btnEl) { btnEl.textContent = '📄 PDF Document'; btnEl.disabled = false; }
@@ -5351,38 +5372,84 @@
     }
 
     async function downloadDailyWord() {
-      const m = gatherDailyModel();
       const btnEl = document.getElementById('btnDownloadWord');
       if (btnEl) { btnEl.textContent = '⏳ Menyiapkan Word...'; btnEl.disabled = true; }
       showToast('Menyusun dokumen Word (.docx)...');
 
       try {
+        const m = gatherDailyModel();
         if (!window.docx) {
-          throw new Error('Modul docx belum siap. Pastikan script docx terload.');
+          throw new Error('Modul docx belum siap. Pastikan koneksi internet aktif untuk memuat library docx.');
         }
         const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, HeadingLevel, AlignmentType } = window.docx;
+
+        const cell = (text, isHeader = false, widthPercent = 50) => new TableCell({
+          width: { size: widthPercent, type: WidthType.PERCENTAGE },
+          children: [new Paragraph({
+            children: [new TextRun({ text: String(text || '-'), bold: isHeader, font: 'Calibri', size: 20 })]
+          })]
+        });
+
+        const row = (label, val) => new TableRow({
+          children: [cell(label, true, 35), cell(val, false, 65)]
+        });
 
         const doc = new Document({
           sections: [{
             properties: {},
             children: [
-              new Paragraph({ text: "CONFIDENTIAL — SOC L1 OPERATIONAL REPORT", heading: HeadingLevel.HEADING_1 }),
+              new Paragraph({ text: "CONFIDENTIAL — SOC L1 OPERATIONAL SHIFT REPORT", heading: HeadingLevel.HEADING_1 }),
               new Paragraph({ text: `Customer: ${m.customer} | Date: ${m.date} | Shift: ${m.shift} (${m.shifttime})` }),
               new Paragraph({ text: `Analyst: ${m.engineer} | Status: ${m.status}` }),
               new Paragraph({ text: "" }),
-              new Paragraph({ text: "1. Executive Summary", heading: HeadingLevel.HEADING_2 }),
+              new Paragraph({ text: "1. Document Control & Header", heading: HeadingLevel.HEADING_2 }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  row("Customer / Project", m.customer),
+                  row("Report Date & Shift", `${m.date} ${m.time} — ${m.shift} (${m.shifttime})`),
+                  row("SOC L1 Engineer", m.engineer),
+                  row("Location / Status", `${m.location} / ${m.reportstatus}`),
+                  row("Reporting Period", m.period)
+                ]
+              }),
+              new Paragraph({ text: "" }),
+              new Paragraph({ text: "2. Executive Summary", heading: HeadingLevel.HEADING_2 }),
               new Paragraph({ text: m.summary }),
               new Paragraph({ text: "" }),
-              new Paragraph({ text: "2. Alert Metrics", heading: HeadingLevel.HEADING_2 }),
-              new Paragraph({ text: `Total Alerts Reviewed: ${m.reviewed}` }),
-              new Paragraph({ text: `Total Alerts Escalated: ${m.escalated}` }),
-              new Paragraph({ text: `Total Tasks: ${m.task} (Done: ${m.taskdone})` }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  row("Overall Security Status", m.status.toUpperCase()),
+                  row("Total Alerts Reviewed", String(m.reviewed)),
+                  row("Total Alerts Escalated", `${m.escalated} (to ${m.escteam})`),
+                  row("Total Shift Tasks", `${m.task} (Completed: ${m.taskdone})`)
+                ]
+              }),
               new Paragraph({ text: "" }),
-              new Paragraph({ text: "3. Issues & Recommendations", heading: HeadingLevel.HEADING_2 }),
+              new Paragraph({ text: "3. Alert Metrics & Severity Distribution", heading: HeadingLevel.HEADING_2 }),
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({ children: [cell("Severity Level", true, 33), cell("Distinct Rules", true, 33), cell("Total Events", true, 34)] }),
+                  new TableRow({ children: [cell("Low", false, 33), cell(String(m.stats.bucket.Low.rules), false, 33), cell(String(m.stats.bucket.Low.events), false, 34)] }),
+                  new TableRow({ children: [cell("Medium", false, 33), cell(String(m.stats.bucket.Medium.rules), false, 33), cell(String(m.stats.bucket.Medium.events), false, 34)] }),
+                  new TableRow({ children: [cell("High", false, 33), cell(String(m.stats.bucket.High.rules), false, 33), cell(String(m.stats.bucket.High.events), false, 34)] }),
+                  new TableRow({ children: [cell("Critical", false, 33), cell(String(m.stats.bucket.Critical.rules), false, 33), cell(String(m.stats.bucket.Critical.events), false, 34)] })
+                ]
+              }),
+              new Paragraph({ text: "" }),
+              new Paragraph({ text: "4. Issues & Recommendations", heading: HeadingLevel.HEADING_2 }),
               new Paragraph({ text: `Issues: ${m.issues}` }),
               new Paragraph({ text: `Recommendations: ${m.reco}` }),
               new Paragraph({ text: "" }),
-              new Paragraph({ text: `Prepared by: ${m.preparedby} | Reviewed by: ${m.reviewedby}` })
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  row("Prepared by", `${m.preparedby} (SOC L1 Analyst)`),
+                  row("Reviewed by", `${m.reviewedby} (SOC L2 / Shift Lead)`)
+                ]
+              })
             ]
           }]
         });
@@ -5394,7 +5461,7 @@
         a.click();
         showToast(`Word tersimpan: ${m.filename}.docx`);
       } catch (e) {
-        console.error(e);
+        console.error('Word error:', e);
         alert('Gagal export Word (.docx): ' + e.message);
       } finally {
         if (btnEl) { btnEl.textContent = '📝 Word (.docx)'; btnEl.disabled = false; }
@@ -5445,7 +5512,11 @@
 
     async function exportImagesToPdf() {
       if (imgItems.length === 0) return;
-      const { jsPDF } = window.jspdf;
+      const jsPDFClass = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+      if (!jsPDFClass) {
+        alert('Modul jsPDF belum siap.');
+        return;
+      }
       const mode = document.getElementById('imgMode').value;
       const baseName = document.getElementById('imgFilename').value.trim() || 'evidence_report';
 
@@ -5468,14 +5539,14 @@
       }
 
       if (mode === 'combine') {
-        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const doc = new jsPDFClass({ unit: 'pt', format: 'a4' });
         for (let i = 0; i < imgItems.length; i++) {
           await addImgToDoc(doc, imgItems[i].dataUrl, i === 0);
         }
         doc.save(`${baseName}.pdf`);
       } else {
         for (let i = 0; i < imgItems.length; i++) {
-          const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+          const doc = new jsPDFClass({ unit: 'pt', format: 'a4' });
           await addImgToDoc(doc, imgItems[i].dataUrl, true);
           doc.save(`${imgItems[i].name || (baseName + '_' + (i + 1))}.pdf`);
         }
