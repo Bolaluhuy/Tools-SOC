@@ -2078,8 +2078,11 @@
     .scratchpad-drawer {
       position: fixed;
       top: 64px;
-      right: -420px;
+      right: 0;
+      transform: translateX(105%);
+      visibility: hidden;
       width: 400px;
+      max-width: 100vw;
       height: calc(100vh - 64px);
       background: rgba(11, 15, 25, 0.95);
       backdrop-filter: blur(20px);
@@ -2089,12 +2092,13 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
-      z-index: 900;
-      transition: right var(--transition-smooth);
+      z-index: 10500;
+      transition: transform var(--transition-smooth), visibility var(--transition-smooth);
     }
 
     .scratchpad-drawer.open {
-      right: 0;
+      transform: translateX(0);
+      visibility: visible;
     }
 
     /* Toast Notification Center */
@@ -2689,15 +2693,118 @@
 
       /* 8. Presensi & Absensi Portal Mobile */
       .attendance-grid {
-        grid-template-columns: 1fr !important;
-        gap: 16px;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 16px !important;
+      }
+
+      .attendance-grid > * {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      .attendance-header-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+
+      .attendance-header-actions .btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        justify-content: center !important;
+        text-align: center !important;
+        padding: 10px !important;
+        font-size: 12.5px !important;
       }
 
       .viewfinder-box {
         max-height: 250px;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      .attendance-submit-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+        margin-top: 8px !important;
+      }
+
+      .attendance-submit-grid .btn {
+        width: 100% !important;
+        min-height: 46px !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+
+      .attendance-history-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+      }
+
+      .attendance-history-controls {
+        display: flex !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+      }
+
+      .attendance-history-controls select {
+        flex: 1 !important;
+        width: auto !important;
+        min-width: 0 !important;
+      }
+
+      #attendanceRecordsTable {
+        min-width: 680px;
       }
 
       /* 9. Daily Report Builder Mobile Enhancements */
+      .builder-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 16px !important;
+      }
+
+      .builder-grid > * {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      .daily-header-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 8px !important;
+      }
+
+      .daily-header-actions button {
+        width: 100% !important;
+        min-height: 38px !important;
+        font-size: 12px !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+
+      .step-card {
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
       .step-head {
         padding: 12px 10px !important;
       }
@@ -2718,6 +2825,21 @@
 
       .step-body {
         padding: 12px 10px !important;
+        overflow-x: hidden !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      #monTable {
+        min-width: 680px;
+      }
+
+      #taskTable {
+        min-width: 580px;
+      }
+
+      #incTable {
+        min-width: 640px;
       }
 
       /* Sticky Shift Board becomes static in mobile flow */
@@ -2726,6 +2848,18 @@
         width: 100% !important;
         margin-top: 16px !important;
         top: 0 !important;
+      }
+
+      .summary-draft-actions {
+        display: flex !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+
+      .summary-draft-actions .btn {
+        flex: 1 !important;
+        min-height: 36px !important;
+        justify-content: center !important;
       }
 
       /* 10. IOC Extractor Mobile Enhancements */
@@ -3442,7 +3576,7 @@
                 watermark waktu otomatis, dan catatan handover tugas.</p>
             </div>
           </div>
-          <div class="module-actions">
+          <div class="module-actions attendance-header-actions">
             <button class="btn btn-secondary btn-sm" onclick="exportAttendanceExcel()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -3513,10 +3647,10 @@
             </div>
 
             <!-- Camera Trigger Controls -->
-            <div style="display:flex; gap:8px; margin-bottom:14px;">
-              <button class="btn btn-secondary btn-xs" style="flex:1;" id="btnStartCamera" onclick="startWebcam()">📹
+            <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+              <button class="btn btn-secondary btn-xs" style="flex:1; min-width:110px;" id="btnStartCamera" onclick="startWebcam()">📹
                 Buka Kamera</button>
-              <button class="btn btn-primary btn-xs" style="flex:1; display:none;" id="btnCapturePhoto"
+              <button class="btn btn-primary btn-xs" style="flex:1; min-width:110px; display:none;" id="btnCapturePhoto"
                 onclick="captureWebcamSnapshot()">📸 Jepret Foto</button>
               <button class="btn btn-outline btn-xs" onclick="document.getElementById('uploadAttendancePhoto').click()"
                 title="Upload file foto bukti">📁 Upload</button>
@@ -3536,7 +3670,7 @@
                 </select>
               </div>
 
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px;">
                 <div>
                   <label class="cyber-label">Shift</label>
                   <select class="cyber-select" id="attShift" onchange="autoDetectShiftStatus()">
@@ -3573,14 +3707,14 @@
               </div>
 
               <!-- Submit Buttons -->
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
+              <div class="attendance-submit-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
                 <button class="btn btn-primary" onclick="recordAttendance('CLOCK_IN')"
-                  style="background:#10b981; color:#04140c; border:none;">
-                  <span>🟢 Clock-In (Mulai)</span>
+                  style="background:#10b981; color:#04140c; border:none; padding:12px; font-weight:700; font-size:13.5px; justify-content:center;">
+                  <span>🟢 Clock-In (Mulai Shift)</span>
                 </button>
                 <button class="btn btn-secondary" onclick="recordAttendance('CLOCK_OUT')"
-                  style="border-color:rgba(239,68,68,0.4); color:#fca5a5;">
-                  <span>🔴 Clock-Out (Selesai)</span>
+                  style="border-color:rgba(239,68,68,0.4); color:#fca5a5; padding:12px; font-weight:700; font-size:13.5px; justify-content:center;">
+                  <span>🔴 Clock-Out (Selesai Shift)</span>
                 </button>
               </div>
             </div>
@@ -3588,7 +3722,7 @@
 
           <!-- Attendance Records History & Audit Table -->
           <div class="cyber-card">
-            <div class="card-header">
+            <div class="card-header attendance-history-header">
               <span class="card-title">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -3598,9 +3732,9 @@
                 </svg>
                 Log Rekapitulasi Presensi Kehadiran
               </span>
-              <div style="display:flex; gap:8px;">
+              <div class="attendance-history-controls" style="display:flex; gap:8px;">
                 <select class="cyber-select" id="attFilterEngineer"
-                  style="width:130px; font-size:11.5px; padding:4px 8px;" onchange="renderAttendanceTable()">
+                  style="width:140px; font-size:12px; padding:6px 10px;" onchange="renderAttendanceTable()">
                   <option value="ALL">Semua Engineer</option>
                   <option value="Bilal">Bilal</option>
                   <option value="Rama">Rama</option>
@@ -3611,8 +3745,16 @@
               </div>
             </div>
 
+            <!-- Mobile table swipe hint -->
+            <div class="mobile-table-hint">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M18 8L22 12L18 16M6 8L2 12L6 16M2 12H22"/>
+              </svg>
+              <span>Geser tabel ke samping untuk melihat detail presensi</span>
+            </div>
+
             <div class="cyber-table-container">
-              <table class="cyber-table" id="attendanceRecordsTable">
+              <table class="cyber-table" id="attendanceRecordsTable" style="min-width:680px;">
                 <thead>
                   <tr>
                     <th style="width:50px;">Foto</th>
@@ -3653,7 +3795,7 @@
               <p>Otomatisasi laporan harian SOC. Terisi otomatis sesuai tanggal, waktu, shift aktif, dan presensi.</p>
             </div>
           </div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <div class="daily-header-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
             <button class="btn btn-outline btn-xs" onclick="autoFillDailyDefaults(true)" title="Sinkronkan tanggal, jam, shift, dan engineer aktif sekarang">
               ⚡ Sinkronkan Shift & Waktu Sekarang
             </button>
@@ -3849,8 +3991,15 @@
               </div>
               <div class="step-body-wrap">
                 <div class="step-body">
+                  <!-- Mobile table swipe hint -->
+                  <div class="mobile-table-hint">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M18 8L22 12L18 16M6 8L2 12L6 16M2 12H22"/>
+                    </svg>
+                    <span>Geser tabel ke samping untuk melihat detail alert</span>
+                  </div>
                   <div class="cyber-table-container mb-3">
-                    <table class="cyber-table" id="monTable">
+                    <table class="cyber-table" id="monTable" style="min-width:680px;">
                       <thead>
                         <tr>
                           <th style="width:100px;">Time</th>
@@ -3864,10 +4013,9 @@
                       <tbody></tbody>
                     </table>
                   </div>
-                  <div style="display:flex; gap:8px;">
+                  <div style="display:flex; gap:8px; flex-wrap:wrap;">
                     <button class="btn btn-secondary btn-xs" onclick="addMonRow()">+ Tambah Baris Alert</button>
-                    <button class="btn btn-outline btn-xs" onclick="seedFromNotable()">↺ Isi Otomatis dari Notable
-                      Alerts</button>
+                    <button class="btn btn-outline btn-xs" onclick="seedFromNotable()">↺ Isi Otomatis dari Notable Alerts</button>
                   </div>
                 </div>
               </div>
@@ -3885,8 +4033,15 @@
               </div>
               <div class="step-body-wrap">
                 <div class="step-body">
+                  <!-- Mobile table swipe hint -->
+                  <div class="mobile-table-hint">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M18 8L22 12L18 16M6 8L2 12L6 16M2 12H22"/>
+                    </svg>
+                    <span>Geser tabel ke samping untuk melihat task &amp; status</span>
+                  </div>
                   <div class="cyber-table-container mb-3">
-                    <table class="cyber-table" id="taskTable">
+                    <table class="cyber-table" id="taskTable" style="min-width:560px;">
                       <thead>
                         <tr>
                           <th>Task</th>
@@ -3915,8 +4070,15 @@
               </div>
               <div class="step-body-wrap">
                 <div class="step-body">
+                  <!-- Mobile table swipe hint -->
+                  <div class="mobile-table-hint">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M18 8L22 12L18 16M6 8L2 12L6 16M2 12H22"/>
+                    </svg>
+                    <span>Geser tabel ke samping untuk detail insiden</span>
+                  </div>
                   <div class="cyber-table-container mb-3">
-                    <table class="cyber-table" id="incTable">
+                    <table class="cyber-table" id="incTable" style="min-width:640px;">
                       <thead>
                         <tr>
                           <th style="width:100px;">Time</th>
@@ -4031,7 +4193,7 @@
               </div>
             </div>
 
-            <div style="display:flex; gap:8px; margin-top:16px;">
+            <div class="summary-draft-actions" style="display:flex; gap:8px; margin-top:16px;">
               <button class="btn btn-secondary btn-xs" style="flex:1;" onclick="saveDraft()">💾 Save Draft</button>
               <button class="btn btn-secondary btn-xs" style="flex:1;"
                 onclick="document.getElementById('loadDraftFile').click()">📂 Load Draft</button>
@@ -6288,12 +6450,12 @@
       const tbody = document.querySelector('#monTable tbody');
       tbody.innerHTML = monRows.map((r, i) => `
         <tr>
-          <td><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px;" value="${r.time}" onchange="monRows[${i}].time=this.value"></td>
-          <td><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px;" value="${r.rule}" onchange="monRows[${i}].rule=this.value"></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.desc}" onchange="monRows[${i}].desc=this.value"></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.action}" onchange="monRows[${i}].action=this.value"></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.result}" onchange="monRows[${i}].result=this.value"></td>
-          <td><button class="btn btn-danger btn-xs" onclick="monRows.splice(${i},1);renderMonTable();">&times;</button></td>
+          <td style="min-width:85px;"><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.time}" onchange="monRows[${i}].time=this.value"></td>
+          <td style="min-width:105px;"><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.rule}" onchange="monRows[${i}].rule=this.value"></td>
+          <td style="min-width:160px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.desc}" onchange="monRows[${i}].desc=this.value"></td>
+          <td style="min-width:160px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.action}" onchange="monRows[${i}].action=this.value"></td>
+          <td style="min-width:140px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.result}" onchange="monRows[${i}].result=this.value"></td>
+          <td style="width:40px; text-align:center;"><button class="btn btn-danger btn-xs" onclick="monRows.splice(${i},1);renderMonTable();">&times;</button></td>
         </tr>
       `).join('');
       updateTaskAndMonCounts();
@@ -6307,14 +6469,14 @@
       const tbody = document.querySelector('#taskTable tbody');
       tbody.innerHTML = taskRows.map((r, i) => `
         <tr>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.task}" onchange="taskRows[${i}].task=this.value"></td>
-          <td><select class="cyber-select" style="padding:6px 8px; font-size:12px;" onchange="taskRows[${i}].status=this.value;updateTaskAndMonCounts();">
+          <td style="min-width:180px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.task}" onchange="taskRows[${i}].task=this.value"></td>
+          <td style="min-width:130px;"><select class="cyber-select" style="padding:6px 8px; font-size:12px; width:100%;" onchange="taskRows[${i}].status=this.value;updateTaskAndMonCounts();">
             <option ${r.status === 'Completed' ? 'selected' : ''}>Completed</option>
             <option ${r.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
             <option ${r.status === 'Pending' ? 'selected' : ''}>Pending</option>
           </select></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.notes}" onchange="taskRows[${i}].notes=this.value"></td>
-          <td><button class="btn btn-danger btn-xs" onclick="taskRows.splice(${i},1);renderTaskTable();">&times;</button></td>
+          <td style="min-width:180px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.notes}" onchange="taskRows[${i}].notes=this.value"></td>
+          <td style="width:40px; text-align:center;"><button class="btn btn-danger btn-xs" onclick="taskRows.splice(${i},1);renderTaskTable();">&times;</button></td>
         </tr>
       `).join('');
       updateTaskAndMonCounts();
@@ -6328,16 +6490,16 @@
       const tbody = document.querySelector('#incTable tbody');
       tbody.innerHTML = incRows.map((r, i) => `
         <tr>
-          <td><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px;" value="${r.time}" onchange="incRows[${i}].time=this.value"></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.incident}" onchange="incRows[${i}].incident=this.value"></td>
-          <td><select class="cyber-select" style="padding:6px 8px; font-size:12px;" onchange="incRows[${i}].severity=this.value">
+          <td style="min-width:85px;"><input type="text" class="cyber-input mono" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.time}" onchange="incRows[${i}].time=this.value"></td>
+          <td style="min-width:160px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.incident}" onchange="incRows[${i}].incident=this.value"></td>
+          <td style="min-width:120px;"><select class="cyber-select" style="padding:6px 8px; font-size:12px; width:100%;" onchange="incRows[${i}].severity=this.value">
             <option ${r.severity === 'Low' ? 'selected' : ''}>Low</option>
             <option ${r.severity === 'Medium' ? 'selected' : ''}>Medium</option>
             <option ${r.severity === 'High' ? 'selected' : ''}>High</option>
             <option ${r.severity === 'Critical' ? 'selected' : ''}>Critical</option>
           </select></td>
-          <td><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px;" value="${r.action}" onchange="incRows[${i}].action=this.value"></td>
-          <td><button class="btn btn-danger btn-xs" onclick="incRows.splice(${i},1);renderIncTable();">&times;</button></td>
+          <td style="min-width:160px;"><input type="text" class="cyber-input" style="padding:6px 8px; font-size:12px; width:100%;" value="${r.action}" onchange="incRows[${i}].action=this.value"></td>
+          <td style="width:40px; text-align:center;"><button class="btn btn-danger btn-xs" onclick="incRows.splice(${i},1);renderIncTable();">&times;</button></td>
         </tr>
       `).join('');
       updateTaskAndMonCounts();
