@@ -1244,22 +1244,105 @@
       border: 1px solid rgba(16, 185, 129, 0.45);
     }
 
-    /* On-Duty Highlight Card */
+    /* Past Days Grayed Out (Setelah Melewati Tanggal Hari Ini) */
+    .shift-pill-cell.shift-past {
+      background: rgba(30, 41, 59, 0.35) !important;
+      color: #64748b !important;
+      border: 1px dashed rgba(148, 163, 184, 0.22) !important;
+      box-shadow: none !important;
+      opacity: 0.58;
+      filter: grayscale(1);
+    }
+
+    .shift-pill-cell.shift-past:hover {
+      opacity: 0.88;
+      filter: grayscale(0.3);
+      border-color: rgba(148, 163, 184, 0.5) !important;
+      color: #94a3b8 !important;
+    }
+
+    .shift-table th.past-day {
+      opacity: 0.55;
+      background: rgba(11, 15, 25, 0.7) !important;
+      color: #64748b !important;
+    }
+
+    .shift-table td.past-day {
+      background: rgba(11, 15, 25, 0.35) !important;
+    }
+
+    /* Today Column Highlight */
+    .shift-table th.today-day {
+      background: rgba(0, 242, 254, 0.14) !important;
+      border-top: 2px solid var(--primary) !important;
+      border-bottom: 2px solid var(--primary) !important;
+      color: var(--primary) !important;
+      position: relative;
+    }
+
+    .shift-table td.today-day {
+      background: rgba(0, 242, 254, 0.06) !important;
+      border-left: 1px solid rgba(0, 242, 254, 0.28) !important;
+      border-right: 1px solid rgba(0, 242, 254, 0.28) !important;
+    }
+
+    .today-badge-mini {
+      display: block;
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 5px;
+      border-radius: 3px;
+      background: var(--primary);
+      color: #04141e;
+      margin: 0 auto 3px auto;
+      letter-spacing: 0.5px;
+      width: max-content;
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+
+    /* Live On-Duty Shift Widgets (Connected to Absensi) */
+    .duty-live-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      padding: 10px 16px;
+      background: rgba(0, 242, 254, 0.05);
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      border-radius: var(--radius-md);
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
     .on-duty-widget {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 14px;
       margin-bottom: 20px;
     }
 
     .duty-card {
-      background: rgba(14, 20, 36, 0.85);
+      background: rgba(14, 20, 36, 0.88);
       border: 1px solid var(--border-card);
       border-radius: var(--radius-md);
-      padding: 14px 18px;
+      padding: 16px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .duty-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    .duty-card.is-active-now {
+      border-color: rgba(16, 185, 129, 0.55);
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
     }
 
     .duty-card::before {
@@ -1290,26 +1373,111 @@
       background: var(--shift-off);
     }
 
+    .duty-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      gap: 8px;
+    }
+
     .duty-title {
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .duty-card-body {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .duty-avatar-wrap {
+      position: relative;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .duty-avatar-img {
+      width: 54px;
+      height: 54px;
+      border-radius: 12px;
+      object-fit: cover;
+      border: 2px solid var(--border-card);
+      background: #090d16;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .duty-avatar-wrap:hover .duty-avatar-img {
+      transform: scale(1.08);
+      border-color: var(--primary);
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+
+    .duty-avatar-status-dot {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #0b0f19;
+    }
+
+    .duty-avatar-status-dot.online {
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    .duty-avatar-status-dot.standby {
+      background: #f59e0b;
+    }
+
+    .duty-avatar-status-dot.offline {
+      background: #64748b;
+    }
+
+    .duty-info-wrap {
+      flex: 1;
+      min-width: 0;
     }
 
     .duty-engineer {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 800;
       color: var(--text-main);
-      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .duty-hours {
-      font-size: 11.5px;
-      font-family: var(--font-mono);
+    .duty-meta {
+      font-size: 11px;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 3px;
+      font-family: var(--font-mono);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .duty-card-footer {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
     }
 
     /* ==========================================================================
@@ -1968,6 +2136,561 @@
         opacity: 1;
       }
     }
+
+    /* ==========================================================================
+       MOBILE RESPONSIVE SYSTEM (SMARTPHONES & SMALL SCREENS)
+       ========================================================================== */
+    .mobile-menu-btn {
+      display: none;
+    }
+
+    .mobile-close-drawer-btn {
+      display: none;
+    }
+
+    .mobile-table-hint {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 12px;
+      margin-top: 12px;
+      margin-bottom: 2px;
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px dashed rgba(0, 242, 254, 0.3);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      color: var(--primary);
+      font-family: var(--font-mono);
+      text-align: center;
+      animation: pulseGlow 2.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; border-color: var(--primary); }
+    }
+
+    .sidebar-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 15, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1100;
+      opacity: 0;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+
+    .mobile-bottom-nav {
+      display: none;
+    }
+
+    /* Tablet and smaller breakpoint adjustments */
+    @media (max-width: 1024px) {
+      .duty-live-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    /* Smartphone Breakpoint (Max Width: 768px) */
+    @media (max-width: 768px) {
+      body {
+        font-size: 13.5px;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* 1. Mobile Top HUD Navbar */
+      .top-hud {
+        height: 56px;
+        padding: 0 12px;
+        gap: 8px;
+      }
+
+      .mobile-menu-btn {
+        display: inline-flex;
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+      }
+
+      .hud-brand {
+        gap: 8px;
+      }
+
+      .brand-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-sm);
+      }
+
+      .brand-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .brand-title {
+        font-size: 14px;
+      }
+
+      .brand-title span:first-child {
+        font-weight: 800;
+      }
+
+      .brand-badge {
+        font-size: 8.5px;
+        padding: 1px 5px;
+      }
+
+      .brand-sub {
+        display: none !important;
+      }
+
+      .cmd-trigger {
+        min-width: unset;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        margin-left: auto;
+      }
+
+      .cmd-trigger span {
+        display: none !important;
+      }
+
+      .cmd-trigger svg {
+        margin: 0;
+      }
+
+      .time-hud {
+        display: none !important;
+      }
+
+      .theme-pills {
+        display: none !important;
+      }
+
+      #audioToggleBtn, #crtToggleBtn {
+        display: none !important;
+      }
+
+      #presetBtn span, #scratchpadToggleBtn span {
+        display: none;
+      }
+
+      #presetBtn, #scratchpadToggleBtn {
+        padding: 0;
+        width: 36px;
+        height: 36px;
+        justify-content: center;
+      }
+
+      /* 2. Mobile Off-Canvas Sidebar Drawer */
+      .sidebar-backdrop.active {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .sidebar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 290px !important;
+        max-width: 85vw !important;
+        z-index: 1200 !important;
+        background: rgba(11, 15, 25, 0.98) !important;
+        backdrop-filter: blur(28px) !important;
+        -webkit-backdrop-filter: blur(28px) !important;
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.9) !important;
+        transform: translateX(-100%) !important;
+        transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        display: flex !important;
+      }
+
+      .sidebar.mobile-open {
+        transform: translateX(0) !important;
+      }
+
+      .sidebar .nav-text,
+      .sidebar .nav-group-title,
+      .sidebar-search {
+        display: block !important;
+      }
+
+      .sidebar-header {
+        padding: 12px;
+        gap: 8px;
+      }
+
+      .mobile-close-drawer-btn {
+        display: inline-flex;
+        width: 34px;
+        height: 34px;
+        flex-shrink: 0;
+      }
+
+      .sidebar-nav {
+        padding: 10px;
+        gap: 12px;
+      }
+
+      .sidebar .nav-item {
+        justify-content: flex-start !important;
+        padding: 11px 14px !important;
+        font-size: 13.5px !important;
+      }
+
+      .sidebar .nav-item svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      /* 3. Main Stage Mobile Padding */
+      .main-stage {
+        padding: 14px 12px 82px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      /* 4. Module Headers Mobile */
+      .module-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .module-heading {
+        align-items: center;
+        gap: 10px;
+      }
+
+      .module-icon-badge {
+        width: 38px;
+        height: 38px;
+        flex-shrink: 0;
+      }
+
+      .module-icon-badge svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .module-title-wrap h1 {
+        font-size: 17px !important;
+        line-height: 1.25;
+      }
+
+      .module-title-wrap p {
+        font-size: 11px !important;
+        line-height: 1.45;
+        margin-top: 2px;
+      }
+
+      .module-actions {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .module-actions .btn {
+        flex: 1;
+        justify-content: center;
+        font-size: 11.5px;
+        padding: 8px 10px;
+      }
+
+      /* 5. Live On-Duty Cards Mobile */
+      .duty-live-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .duty-live-header button {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .on-duty-widget {
+        grid-template-columns: 1fr !important;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+
+      .duty-card {
+        padding: 13px 14px;
+      }
+
+      .duty-card-top {
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .duty-title {
+        font-size: 10.5px;
+      }
+
+      .duty-avatar-img {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+      }
+
+      .duty-engineer {
+        font-size: 15px;
+      }
+
+      .duty-meta {
+        font-size: 10.5px;
+      }
+
+      .duty-card-footer {
+        margin-top: 10px;
+        padding-top: 8px;
+        flex-wrap: wrap;
+      }
+
+      .duty-card-footer button {
+        min-height: 34px;
+        padding: 4px 12px;
+        font-size: 11px;
+      }
+
+      /* 6. Shift Matrix Controls & Table Mobile */
+      .shift-controls-bar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 10px;
+      }
+
+      .shift-month-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 6px;
+      }
+
+      .shift-month-nav select {
+        flex: 1;
+        width: auto !important;
+        font-size: 12.5px !important;
+      }
+
+      .shift-controls-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+      }
+
+      .shift-controls-actions button {
+        flex: 1;
+      }
+
+      .mobile-table-hint {
+        display: flex;
+      }
+
+      .shift-table-wrap {
+        -webkit-overflow-scrolling: touch;
+        margin-top: 8px;
+        border-radius: var(--radius-sm);
+      }
+
+      .shift-table th,
+      .shift-table td {
+        min-width: 44px;
+        padding: 6px 2px;
+        font-size: 11px;
+      }
+
+      .shift-table th.week-header {
+        font-size: 10px;
+        padding: 4px;
+        letter-spacing: 0;
+      }
+
+      .shift-table td.eng-name,
+      .shift-table th.eng-name {
+        min-width: 90px !important;
+        max-width: 90px !important;
+        width: 90px !important;
+        padding: 6px 6px !important;
+        font-size: 11.5px !important;
+      }
+
+      .shift-table td.eng-name div {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .shift-pill-cell {
+        padding: 5px 2px !important;
+        font-size: 9.5px !important;
+        font-weight: 800;
+        min-height: 26px;
+      }
+
+      .shift-table td:last-child {
+        min-width: 120px !important;
+        font-size: 10px !important;
+        padding: 4px 6px !important;
+      }
+
+      /* 7. Presensi & Absensi Portal Mobile */
+      .attendance-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px;
+      }
+
+      .viewfinder-box {
+        max-height: 250px;
+      }
+
+      .cyber-card {
+        padding: 14px;
+        border-radius: var(--radius-md);
+      }
+
+      .card-header {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .card-title {
+        font-size: 13px;
+      }
+
+      /* 8. Mobile Bottom Navigation Bar */
+      .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: rgba(8, 12, 22, 0.96);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-top: 1px solid var(--border-subtle);
+        z-index: 850;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 4px;
+        box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.65);
+      }
+
+      .bottom-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-family: var(--font-sans);
+        font-size: 10.5px;
+        font-weight: 600;
+        padding: 6px 0;
+        cursor: pointer;
+        transition: color var(--transition-fast), transform var(--transition-fast);
+        text-decoration: none;
+        outline: none;
+      }
+
+      .bottom-nav-item svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        stroke-width: 2;
+        transition: stroke var(--transition-fast), transform var(--transition-fast);
+      }
+
+      .bottom-nav-item.active {
+        color: var(--primary);
+      }
+
+      .bottom-nav-item.active svg {
+        stroke: var(--primary);
+        transform: scale(1.12);
+        filter: drop-shadow(0 0 6px var(--primary-glow));
+      }
+
+      .bottom-nav-item:active {
+        transform: scale(0.92);
+      }
+
+      /* 9. Modals & Drawers on Mobile */
+      .photo-modal-content {
+        width: 95vw;
+        max-width: 95vw;
+        padding: 12px;
+      }
+
+      #photoModalImg {
+        max-height: 52vh;
+      }
+
+      .cmd-palette {
+        width: 95vw;
+        max-width: 95vw;
+      }
+
+      .scratchpad-drawer {
+        width: 100vw;
+        max-width: 100vw;
+      }
+
+      .toast-center {
+        bottom: 70px;
+        right: 12px;
+        left: 12px;
+      }
+
+      /* Universal form touch inputs */
+      .cyber-input, .cyber-select, .cyber-textarea {
+        font-size: 14px;
+      }
+    }
+
+    /* Small phone optimizations (< 400px) */
+    @media (max-width: 400px) {
+      .top-hud {
+        padding: 0 8px;
+      }
+
+      .brand-title {
+        font-size: 13px;
+      }
+
+      .brand-badge {
+        display: none;
+      }
+
+      .main-stage {
+        padding: 12px 8px 80px !important;
+      }
+
+      .duty-card {
+        padding: 11px 12px;
+      }
+    }
   </style>
 </head>
 
@@ -1984,20 +2707,29 @@
 
   <!-- TOP HUD BAR -->
   <header class="top-hud">
-    <a href="#" class="hud-brand">
-      <div class="brand-icon">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button class="hud-btn icon-only mobile-menu-btn" id="mobileMenuToggleBtn" onclick="toggleMobileSidebar()" title="Buka Menu Modul">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="18" x2="21" y2="18" />
         </svg>
-      </div>
-      <div class="brand-text">
-        <div class="brand-title">
-          <span>BeX</span>
-          <span class="brand-badge">SOC WORKBENCH v2.6</span>
+      </button>
+      <a href="#" class="hud-brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
         </div>
-        <span class="brand-sub">Incident Triage &amp; Operations Suite</span>
-      </div>
-    </a>
+        <div class="brand-text">
+          <div class="brand-title">
+            <span>BeX</span>
+            <span class="brand-badge">SOC v2.6</span>
+          </div>
+          <span class="brand-sub">Incident Triage &amp; Operations Suite</span>
+        </div>
+      </a>
+    </div>
 
     <!-- Command Palette Trigger -->
     <div class="cmd-trigger" id="cmdTriggerBtn">
@@ -2080,6 +2812,9 @@
     </div>
   </header>
 
+  <!-- Sidebar Backdrop for Mobile -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleMobileSidebar(false)"></div>
+
   <!-- APP CONTAINER -->
   <div class="app-container">
 
@@ -2093,6 +2828,12 @@
           </svg>
           <input type="text" id="sidebarFilterInput" placeholder="Filter modul...">
         </div>
+        <button class="hud-btn icon-only mobile-close-drawer-btn" onclick="toggleMobileSidebar(false)" title="Tutup Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <nav class="sidebar-nav" id="sidebarNav">
@@ -2342,34 +3083,35 @@
           </div>
         </div>
 
-        <!-- Live On-Duty Shift Widgets -->
+        <!-- Live On-Duty Shift Widgets (Connected to Absensi Portal) -->
+        <div class="duty-live-header">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="pulsing-live"></span>
+            <div>
+              <div style="font-size:13.5px; font-weight:800; color:#38bdf8; display:flex; align-items:center; gap:8px;">
+                <span>Petugas Jaga Live SOC Hari Ini</span>
+                <span class="badge badge-primary" style="font-size:10px;" id="dutyLiveDateBadge">Hari Ini</span>
+              </div>
+              <div style="font-size:11px; color:var(--text-muted);" id="dutyLiveSubtext">
+                Status presensi &amp; foto real-time tersinkronisasi otomatis dengan Portal Presensi &amp; Absensi Shift.
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <button class="btn btn-secondary btn-xs" onclick="switchTab('attendance-portal')" title="Buka Portal Presensi & Absensi">
+              <span>📷 Buka Portal Absensi</span>
+            </button>
+          </div>
+        </div>
+
         <div class="on-duty-widget" id="onDutyContainer">
-          <div class="duty-card pagi">
-            <div class="duty-title">🌅 Shift Pagi (07:00 - 15:00)</div>
-            <div class="duty-engineer" id="dutyPagiName">-</div>
-            <div class="duty-hours">Status: On-Duty</div>
-          </div>
-          <div class="duty-card siang">
-            <div class="duty-title">☀️ Shift Siang (15:00 - 23:00)</div>
-            <div class="duty-engineer" id="dutySiangName">-</div>
-            <div class="duty-hours">Status: On-Duty</div>
-          </div>
-          <div class="duty-card malam">
-            <div class="duty-title">🌙 Shift Malam (23:00 - 07:00)</div>
-            <div class="duty-engineer" id="dutyMalamName">-</div>
-            <div class="duty-hours">Status: On-Duty</div>
-          </div>
-          <div class="duty-card off">
-            <div class="duty-title">🏖️ Libur / Off Duty</div>
-            <div class="duty-engineer" id="dutyOffName">-</div>
-            <div class="duty-hours">Status: Standby / Off</div>
-          </div>
+          <!-- Populated dynamically with photo, shift, and on-duty status by updateOnDutyWidget() -->
         </div>
 
         <!-- Month Navigation & Controls -->
         <div class="cyber-card mb-4">
-          <div class="flex-between">
-            <div style="display:flex; align-items:center; gap:10px;">
+          <div class="flex-between shift-controls-bar">
+            <div class="shift-month-nav" style="display:flex; align-items:center; gap:10px;">
               <button class="hud-btn icon-only" onclick="changeShiftMonth(-1)" title="Bulan Sebelumnya">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <polyline points="15 18 9 12 15 6" />
@@ -2390,10 +3132,18 @@
               </button>
             </div>
 
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div class="shift-controls-actions" style="display:flex; align-items:center; gap:8px;">
               <button class="btn btn-secondary btn-xs" onclick="resetMonthRotation()">🔄 Reset Pola Rotasi</button>
               <span class="badge badge-primary">Klik sel mana saja untuk ubah shift</span>
             </div>
+          </div>
+
+          <!-- Mobile table swipe hint -->
+          <div class="mobile-table-hint">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M18 8L22 12L18 16M6 8L2 12L6 16M2 12H22"/>
+            </svg>
+            <span>Geser tabel ke samping untuk melihat tgl 1–31</span>
           </div>
 
           <!-- Shift Table Matrix -->
@@ -3987,12 +4737,27 @@
 
     function switchTab(tabId) {
       navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-tab') === tabId));
+      document.querySelectorAll('.bottom-nav-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-tab') === tabId);
+      });
       panes.forEach(pane => pane.classList.toggle('active', pane.id === `pane-${tabId}`));
       if (tabId === 'daily-builder') {
         autoFillDailyDefaults();
       }
+      toggleMobileSidebar(false);
       playBeep(700, 'sine', 0.04);
-      document.getElementById('mainStage').scrollTop = 0;
+      const stage = document.getElementById('mainStage');
+      if (stage) stage.scrollTop = 0;
+    }
+
+    function toggleMobileSidebar(force) {
+      const sidebar = document.getElementById('appSidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (!sidebar) return;
+      const isOpen = typeof force === 'boolean' ? force : !sidebar.classList.contains('mobile-open');
+      sidebar.classList.toggle('mobile-open', isOpen);
+      if (backdrop) backdrop.classList.toggle('active', isOpen);
+      document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
     navItems.forEach(item => {
@@ -4004,9 +4769,12 @@
 
     /* Sidebar Collapse */
     const sidebar = document.getElementById('appSidebar');
-    document.getElementById('sidebarCollapseBtn').addEventListener('click', () => {
-      sidebar.classList.toggle('collapsed');
-    });
+    const collapseBtn = document.getElementById('sidebarCollapseBtn');
+    if (collapseBtn) {
+      collapseBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+      });
+    }
 
     /* Sidebar Filter */
     document.getElementById('sidebarFilterInput').addEventListener('input', (e) => {
@@ -4179,6 +4947,79 @@
       localStorage.setItem(storageKey, JSON.stringify(schedule));
     }
 
+    /* Default stylized SOC cyber profile avatar generator */
+    function getEngineerDefaultAvatar(name, shift) {
+      const colors = {
+        Rama: { bg: '#064e3b', accent: '#34d399', text: 'R' },
+        Bilal: { bg: '#1e3a8a', accent: '#38bdf8', text: 'B' },
+        Jingga: { bg: '#78350f', accent: '#fbbf24', text: 'J' },
+        Akmal: { bg: '#581c87', accent: '#c084fc', text: 'A' },
+      };
+      const c = colors[name] || { bg: '#1e293b', accent: '#00f2fe', text: (name || 'L1')[0] };
+      const initial = (name || 'L1').charAt(0).toUpperCase();
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="bg-${initial}" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="${c.bg}"/>
+            <stop offset="100%" stop-color="#070a14"/>
+          </linearGradient>
+        </defs>
+        <rect width="120" height="120" rx="22" fill="url(#bg-${initial})"/>
+        <rect x="2" y="2" width="116" height="116" rx="20" fill="none" stroke="${c.accent}" stroke-width="2" stroke-opacity="0.5"/>
+        <circle cx="60" cy="46" r="22" fill="${c.accent}" fill-opacity="0.2" stroke="${c.accent}" stroke-width="2"/>
+        <circle cx="60" cy="42" r="13" fill="${c.accent}"/>
+        <path d="M34 88 C34 68 86 68 86 88 Z" fill="${c.accent}" fill-opacity="0.85"/>
+        <rect x="18" y="94" width="84" height="18" rx="9" fill="#0b1122" stroke="${c.accent}" stroke-width="1.2"/>
+        <text x="60" y="106" fill="#ffffff" font-family="system-ui, sans-serif" font-weight="800" font-size="9" text-anchor="middle" letter-spacing="0.5">L1 • ${name ? name.toUpperCase() : 'SOC'}</text>
+      </svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+
+    /* ==========================================================================
+       ATTENDANCE RECORDS DATA & STORAGE INITIALIZATION
+       ========================================================================== */
+    let attendanceRecords = [];
+    try {
+      const savedAtt = localStorage.getItem('nexus_attendance_records');
+      if (savedAtt) attendanceRecords = JSON.parse(savedAtt);
+    } catch (e) { attendanceRecords = []; }
+
+    // Seed realistic initial attendance for Rama today if records are completely empty
+    if (!attendanceRecords || attendanceRecords.length === 0) {
+      const initDate = new Date();
+      const initIso = initDate.toISOString();
+      const initDateStr = initDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      attendanceRecords = [{
+        id: 'rec-rama-init-01',
+        engineer: 'Rama',
+        shift: 'PAGI',
+        eventType: 'CLOCK_IN',
+        status: 'Tepat Waktu',
+        location: 'Onsite SOC Center',
+        notes: 'Handover Shift 1 Pagi: Monitoring alert P1 & P2 SIEM clear, endpoint sensor 100% active.',
+        timeStr: '06:55:18',
+        dateStr: initDateStr,
+        timestampIso: initIso,
+        photo: getEngineerDefaultAvatar('Rama', 'PAGI'),
+        hash: '7d4f9a12c08e5b31'
+      }];
+      try {
+        localStorage.setItem('nexus_attendance_records', JSON.stringify(attendanceRecords));
+      } catch (e) { }
+    }
+
+    /* Quick jump to attendance portal with pre-selected engineer & shift */
+    function quickGoToAttendance(engineer, shift) {
+      switchTab('attendance-portal');
+      const engSel = document.getElementById('attEngineer');
+      const shiftSel = document.getElementById('attShift');
+      if (engSel && engineer) engSel.value = engineer;
+      if (shiftSel && shift) shiftSel.value = shift;
+      showToast(`Presensi disiapkan untuk: ${engineer} (Shift ${shift})`);
+      const cam = document.getElementById('viewfinderContainer');
+      if (cam) cam.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
     function renderShiftSchedule() {
       const monthVal = document.getElementById('shiftMonthSelect').value;
       const [yearStr, monthStr] = monthVal.split('-');
@@ -4187,6 +5028,22 @@
       const daysInMonth = new Date(year, month, 0).getDate();
 
       const schedule = getScheduleForMonth(year, month);
+
+      // Evaluate today reference
+      const todayObj = new Date();
+      const curYear = todayObj.getFullYear();
+      const curMonth = todayObj.getMonth() + 1;
+      const curDay = todayObj.getDate();
+
+      function getDayStatus(d) {
+        if (year < curYear || (year === curYear && month < curMonth) || (year === curYear && month === curMonth && d < curDay)) {
+          return 'past';
+        } else if (year === curYear && month === curMonth && d === curDay) {
+          return 'today';
+        } else {
+          return 'future';
+        }
+      }
 
       // Build Headers: Weeks & Days
       const thead = document.getElementById('shiftTableHead');
@@ -4213,7 +5070,11 @@
         const dObj = new Date(year, month - 1, d);
         const dayOfWeek = dObj.getDay();
         const isSun = dayOfWeek === 0;
-        dayRow += `<th class="day-name ${isSun ? 'sunday' : ''}"><div style="font-size:12px; font-weight:800;">${d}</div><div style="font-size:9.5px; opacity:0.8;">${DAY_NAMES_ID[dayOfWeek].slice(0, 3)}</div></th>`;
+        const status = getDayStatus(d);
+        const pastHeaderClass = status === 'past' ? 'past-day' : (status === 'today' ? 'today-day' : '');
+        const todayBadge = status === 'today' ? '<span class="today-badge-mini">HARI INI</span>' : '';
+
+        dayRow += `<th class="day-name ${isSun ? 'sunday' : ''} ${pastHeaderClass}">${todayBadge}<div style="font-size:12px; font-weight:800;">${d}</div><div style="font-size:9.5px; opacity:0.8;">${DAY_NAMES_ID[dayOfWeek].slice(0, 3)}</div></th>`;
       }
       dayRow += '</tr>';
 
@@ -4228,12 +5089,24 @@
         for (let d = 1; d <= daysInMonth; d++) {
           const shift = schedule[eng][d] || 'OFF';
           stats[shift] = (stats[shift] || 0) + 1;
-          const shiftClass = shift.toLowerCase() === 'pagi' ? 'shift-pagi' :
-            shift.toLowerCase() === 'siang' ? 'shift-siang' :
-              shift.toLowerCase() === 'malam' ? 'shift-malam' :
-                shift.toLowerCase() === 'belajar' ? 'shift-belajar' : 'shift-off';
+          const status = getDayStatus(d);
+          const isPast = status === 'past';
+          const isToday = status === 'today';
 
-          cells += `<td><span class="shift-pill-cell ${shiftClass}" onclick="cycleShiftCell('${eng}', ${year}, ${month}, ${d})">${shift}</span></td>`;
+          let shiftClass = '';
+          if (isPast) {
+            shiftClass = 'shift-past';
+          } else {
+            shiftClass = shift.toLowerCase() === 'pagi' ? 'shift-pagi' :
+              shift.toLowerCase() === 'siang' ? 'shift-siang' :
+                shift.toLowerCase() === 'malam' ? 'shift-malam' :
+                  shift.toLowerCase() === 'belajar' ? 'shift-belajar' : 'shift-off';
+          }
+
+          const tdClass = isPast ? 'past-day' : (isToday ? 'today-day' : '');
+          const cellTooltip = isPast ? `Tgl ${d} sudah dilewati (Shift: ${shift})` : (isToday ? `Hari Ini (Shift: ${shift})` : `Shift: ${shift}`);
+
+          cells += `<td class="${tdClass}"><span class="shift-pill-cell ${shiftClass}" title="${cellTooltip}" onclick="cycleShiftCell('${eng}', ${year}, ${month}, ${d})">${shift}</span></td>`;
         }
 
         return `
@@ -4255,7 +5128,7 @@
         `;
       }).join('');
 
-      // Update Live On-Duty Widget
+      // Update Live On-Duty Widget with Photos & Real-time Attendance
       updateOnDutyWidget(schedule, year, month);
       renderEngineerStats(schedule, daysInMonth);
     }
@@ -4296,27 +5169,194 @@
       showToast('Pola rotasi shift di-reset ke standar 3-Hari Kerja + 1-Hari Libur');
     }
 
+    /* Live On-Duty Shift Widgets connected with Presensi & Absensi Portal */
     function updateOnDutyWidget(schedule, year, month) {
       const now = new Date();
       const todayDay = now.getDate();
       const curYear = now.getFullYear();
       const curMonth = now.getMonth() + 1;
+      const curHour = now.getHours();
 
-      const targetDay = (year === curYear && month === curMonth) ? todayDay : 1;
+      // Today's actual date string ISO
+      const todayIsoDate = `${curYear}-${String(curMonth).padStart(2, '0')}-${String(todayDay).padStart(2, '0')}`;
+      const todaySchedule = getScheduleForMonth(curYear, curMonth);
 
-      let duty = { PAGI: '-', SIANG: '-', MALAM: '-', OFF: [] };
+      // Determine scheduled engineers for today
+      let scheduled = { PAGI: '-', SIANG: '-', MALAM: '-', OFF: [] };
       for (let eng of ENGINEERS) {
-        const s = (schedule[eng][targetDay] || 'OFF').toUpperCase();
-        if (s === 'PAGI') duty.PAGI = eng;
-        else if (s === 'SIANG') duty.SIANG = eng;
-        else if (s === 'MALAM') duty.MALAM = eng;
-        else duty.OFF.push(eng);
+        const s = (todaySchedule[eng] && todaySchedule[eng][todayDay] ? todaySchedule[eng][todayDay] : 'OFF').toUpperCase();
+        if (s === 'PAGI') scheduled.PAGI = eng;
+        else if (s === 'SIANG') scheduled.SIANG = eng;
+        else if (s === 'MALAM') scheduled.MALAM = eng;
+        else scheduled.OFF.push(eng);
       }
 
-      document.getElementById('dutyPagiName').innerText = duty.PAGI;
-      document.getElementById('dutySiangName').innerText = duty.SIANG;
-      document.getElementById('dutyMalamName').innerText = duty.MALAM;
-      document.getElementById('dutyOffName').innerText = duty.OFF.join(', ') || '-';
+      // Update date badge
+      const badgeEl = document.getElementById('dutyLiveDateBadge');
+      if (badgeEl) {
+        badgeEl.textContent = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+
+      // Query today's attendance records
+      const todayRecords = (attendanceRecords || []).filter(r => r.timestampIso && r.timestampIso.startsWith(todayIsoDate));
+
+      // Shift configurations
+      const shiftConfigs = [
+        {
+          key: 'PAGI',
+          shiftNum: 'Shift 1',
+          name: 'Pagi',
+          hours: '07:00 - 15:00 WIB',
+          icon: '🌅',
+          scheduledEng: scheduled.PAGI,
+          cardClass: 'pagi',
+          isActiveHour: curHour >= 7 && curHour < 15
+        },
+        {
+          key: 'SIANG',
+          shiftNum: 'Shift 2',
+          name: 'Siang',
+          hours: '15:00 - 23:00 WIB',
+          icon: '☀️',
+          scheduledEng: scheduled.SIANG,
+          cardClass: 'siang',
+          isActiveHour: curHour >= 15 && curHour < 23
+        },
+        {
+          key: 'MALAM',
+          shiftNum: 'Shift 3',
+          name: 'Malam',
+          hours: '23:00 - 07:00 WIB',
+          icon: '🌙',
+          scheduledEng: scheduled.MALAM,
+          cardClass: 'malam',
+          isActiveHour: curHour >= 23 || curHour < 7
+        }
+      ];
+
+      const container = document.getElementById('onDutyContainer');
+      if (!container) return;
+
+      let cardsHtml = shiftConfigs.map(cfg => {
+        // Find latest attendance event for this shift
+        const record = todayRecords.find(r => (r.shift || '').toUpperCase() === cfg.key) ||
+                       todayRecords.find(r => r.engineer === cfg.scheduledEng);
+
+        const isClockIn = record && record.eventType === 'CLOCK_IN';
+        const isClockOut = record && record.eventType === 'CLOCK_OUT';
+
+        let displayEng = record ? record.engineer : (cfg.scheduledEng || '-');
+        let photoSrc = (record && record.photo) ? record.photo : getEngineerDefaultAvatar(displayEng, cfg.key);
+        let statusBadge = '';
+        let statusDotClass = 'standby';
+        let metaHtml = '';
+        let actionBtn = '';
+        let cardActiveClass = cfg.isActiveHour ? 'is-active-now' : '';
+
+        if (isClockIn) {
+          statusDotClass = 'online';
+          statusBadge = '<span class="badge" style="background:rgba(16,185,129,0.22); color:#34d399; border:1px solid rgba(16,185,129,0.5); font-weight:700;">🟢 ON-DUTY</span>';
+          metaHtml = `
+            <div>Clock-In: <strong>${record.timeStr} WIB</strong></div>
+            <div style="color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📍 ${escapeHtml(record.location)}</div>
+          `;
+          actionBtn = `<button class="btn btn-secondary btn-xs" onclick="openPhotoModal('${record.id}')" title="Klik untuk verifikasi bukti foto">🔍 Bukti Foto</button>`;
+        } else if (isClockOut) {
+          statusDotClass = 'offline';
+          statusBadge = '<span class="badge" style="background:rgba(239,68,68,0.18); color:#fca5a5; border:1px solid rgba(239,68,68,0.45);">🔴 CLOCKED-OUT</span>';
+          metaHtml = `
+            <div>Selesai: <strong>${record.timeStr} WIB</strong></div>
+            <div style="color:var(--text-dim);">Handover selesai</div>
+          `;
+          actionBtn = `<button class="btn btn-secondary btn-xs" onclick="openPhotoModal('${record.id}')" title="Lihat foto bukti clock-out">🔍 Bukti Foto</button>`;
+        } else {
+          statusDotClass = 'standby';
+          statusBadge = '<span class="badge" style="background:rgba(234,179,8,0.14); color:#facc15; border:1px solid rgba(234,179,8,0.38);">⏳ BELUM ABSEN</span>';
+          metaHtml = `
+            <div>Status: <span style="color:var(--text-muted);">Menunggu Presensi</span></div>
+            <div style="color:var(--text-dim);">${cfg.hours}</div>
+          `;
+          actionBtn = `<button class="btn btn-primary btn-xs" onclick="quickGoToAttendance('${displayEng}', '${cfg.key}')" title="Lakukan presensi sekarang untuk ${displayEng}" style="padding:4px 10px; font-weight:700;">📸 Absen Sekarang</button>`;
+        }
+
+        const activeIndicator = cfg.isActiveHour ? '<span class="badge badge-primary" style="font-size:9.5px; padding:1px 6px;">SEDANG BERJALAN</span>' : '';
+
+        return `
+          <div class="duty-card ${cfg.cardClass} ${cardActiveClass}">
+            <div class="duty-card-top">
+              <div class="duty-title">
+                <span>${cfg.icon} ${cfg.shiftNum} (${cfg.name})</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px;">
+                ${activeIndicator}
+                ${statusBadge}
+              </div>
+            </div>
+
+            <div class="duty-card-body">
+              <div class="duty-avatar-wrap" onclick="${record ? `openPhotoModal('${record.id}')` : `quickGoToAttendance('${displayEng}', '${cfg.key}')`}" title="${record ? 'Klik untuk perbesar bukti foto' : 'Klik untuk presensi'}">
+                <img src="${photoSrc}" alt="${displayEng}" class="duty-avatar-img">
+                <span class="duty-avatar-status-dot ${statusDotClass}"></span>
+              </div>
+              <div class="duty-info-wrap">
+                <div class="duty-engineer">
+                  <span>${displayEng}</span>
+                  ${record && record.status === 'Tepat Waktu' ? '<span title="Hadir Tepat Waktu" style="font-size:12px;">⚡</span>' : ''}
+                </div>
+                <div class="duty-meta">
+                  ${metaHtml}
+                </div>
+              </div>
+            </div>
+
+            <div class="duty-card-footer">
+              <span style="font-size:10.5px; color:var(--text-dim); font-family:var(--font-mono);">${cfg.hours}</span>
+              ${actionBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add OFF / Libur Card
+      const offEngineers = scheduled.OFF.length > 0 ? scheduled.OFF : ['-'];
+      const offNames = offEngineers.join(', ');
+      const offAvatars = offEngineers.map(eng => `
+        <div class="duty-avatar-wrap" style="cursor:default;" title="${eng} (Off Duty)">
+          <img src="${getEngineerDefaultAvatar(eng, 'OFF')}" alt="${eng}" class="duty-avatar-img" style="width:42px; height:42px; opacity:0.85; filter:grayscale(0.3);">
+          <span class="duty-avatar-status-dot offline"></span>
+        </div>
+      `).join('');
+
+      cardsHtml += `
+        <div class="duty-card off">
+          <div class="duty-card-top">
+            <div class="duty-title">
+              <span>🏖️ Libur / Off Duty</span>
+            </div>
+            <span class="badge shift-off">STANDBY / OFF</span>
+          </div>
+
+          <div class="duty-card-body">
+            <div style="display:flex; gap:6px; align-items:center;">
+              ${offAvatars}
+            </div>
+            <div class="duty-info-wrap">
+              <div class="duty-engineer" style="font-size:14.5px;">${offNames}</div>
+              <div class="duty-meta">
+                <div>Status: <span style="color:var(--text-dim);">Rest Day / Standby</span></div>
+                <div style="color:var(--text-dim);">Tidak ada tugas shift hari ini</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="duty-card-footer">
+            <span style="font-size:10.5px; color:var(--text-dim); font-family:var(--font-mono);">Jadwal Rotasi Off</span>
+            <span class="badge badge-secondary" style="font-size:10px;">Standby On-Call</span>
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = cardsHtml;
     }
 
     function renderEngineerStats(schedule, daysInMonth) {
@@ -4387,12 +5427,6 @@
     /* ==========================================================================
        PRESENSI & ABSENSI SHIFT SOC PORTAL LOGIC
        ========================================================================== */
-    let attendanceRecords = [];
-    try {
-      const savedAtt = localStorage.getItem('nexus_attendance_records');
-      if (savedAtt) attendanceRecords = JSON.parse(savedAtt);
-    } catch (e) { attendanceRecords = []; }
-
     let webcamStream = null;
     let currentPhotoDataUrl = null;
 
@@ -4577,7 +5611,7 @@
       const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       const dateStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      const photo = currentPhotoDataUrl || createPlaceholderAvatar(eng, shift, eventType);
+      const photo = currentPhotoDataUrl || getEngineerDefaultAvatar(eng, shift);
 
       // Create crypto verification hash
       let hashHex = Math.random().toString(16).slice(2, 10);
@@ -4619,6 +5653,7 @@
 
       renderAttendanceTable();
       updateActiveAttendanceBanner();
+      renderShiftSchedule();
       playBeep(eventType === 'CLOCK_IN' ? 1000 : 600, 'sine', 0.08);
       showToast(`${eventType === 'CLOCK_IN' ? '🟢 Clock-In' : '🔴 Clock-Out'} berhasil: ${eng} (${shift})`);
 
@@ -4684,6 +5719,7 @@
       localStorage.setItem('nexus_attendance_records', JSON.stringify(attendanceRecords));
       renderAttendanceTable();
       updateActiveAttendanceBanner();
+      renderShiftSchedule();
       showToast('Log presensi dihapus');
     }
 
@@ -4693,6 +5729,7 @@
       localStorage.removeItem('nexus_attendance_records');
       renderAttendanceTable();
       updateActiveAttendanceBanner();
+      renderShiftSchedule();
       showToast('Seluruh riwayat presensi dibersihkan');
     }
 
@@ -6351,6 +7388,44 @@
       initApplication();
     }
   </script>
+
+  <!-- Mobile Bottom Navigation Dock (PWA / Mobile Native UX) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button class="bottom-nav-item active" data-tab="shift-matrix" onclick="switchTab('shift-matrix')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+      </svg>
+      <span>Jadwal</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="attendance-portal" onclick="switchTab('attendance-portal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="8.5" cy="7.5" r="4" />
+        <polyline points="17 11 19 13 23 9" />
+      </svg>
+      <span>Presensi</span>
+    </button>
+    <button class="bottom-nav-item" data-tab="daily-builder" onclick="switchTab('daily-builder')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+      </svg>
+      <span>Laporan</span>
+    </button>
+    <button class="bottom-nav-item" onclick="toggleMobileSidebar(true)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+      </svg>
+      <span>Menu</span>
+    </button>
+  </nav>
 </body>
 
 </html>
